@@ -1,0 +1,35 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devenv-service-endpoints
+  namespace: dev-env
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  POSTGRES_HOST: "postgres.database.svc"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "postgres"
+  POSTGRES_DB: "postgres"
+
+  QDRANT_HOST: "qdrant.database.svc"
+  QDRANT_HTTP_PORT: "6333"
+  QDRANT_GRPC_PORT: "6334"
+
+  REDIS_HOST: "redis-stack.stack.svc"
+  REDIS_PORT: "6379"
+
+  RABBITMQ_HOST: "rabbitmq.stack.svc"
+  RABBITMQ_AMQP_PORT: "5672"
+  RABBITMQ_MANAGEMENT_PORT: "15672"
+
+  MINIO_ENDPOINT: "http://minio.storage.svc:9000"
+  MINIO_CONSOLE: "http://minio.storage.svc:9001"
+
+  OLLAMA_HOST: "http://ollama.ai-services.svc:11434"
+
+  MLFLOW_TRACKING_URI: "http://mlflow.observability.svc:5000"
+  LANGFUSE_HOST: "http://langfuse.observability.svc:3000"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability.svc:4317"
+
+  VAULT_ADDR: "http://vault.security.svc:8200"

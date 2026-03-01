@@ -1,0 +1,19 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Secrets (should never exist here — all secrets via Vault + ESO)
+*.key
+*.pem
+*.p12
+
+# Temp
+*.bak
+*.tmp

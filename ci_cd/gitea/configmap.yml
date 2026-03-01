@@ -1,0 +1,40 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitea-config
+  namespace: ci-cd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+data:
+  app.ini: |
+    [server]
+    DOMAIN = gitea.svc.k8s.monster.lab
+    ROOT_URL = https://gitea.svc.k8s.monster.lab
+    HTTP_PORT = 3000
+    SSH_PORT = 2222
+    LFS_START_SERVER = true
+
+    [database]
+    DB_TYPE = postgres
+    HOST = postgres.database.svc:5432
+    NAME = gitea
+    USER = gitea
+    PASSWD = %(GITEA__database__PASSWD)s
+    SSL_MODE = disable
+
+    [cache]
+    ADAPTER = redis
+    HOST = redis://redis-stack.stack.svc:6379/0
+
+    [session]
+    PROVIDER = redis
+    PROVIDER_CONFIG = redis://redis-stack.stack.svc:6379/1
+
+    [queue]
+    TYPE = redis
+    CONN_STR = redis://redis-stack.stack.svc:6379/2
+
+    [log]
+    MODE = console
+    LEVEL = Info

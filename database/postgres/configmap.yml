@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: database
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+data:
+  init-databases.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      CREATE USER coder WITH PASSWORD '$CODER_DB_PASSWORD';
+      CREATE DATABASE coder OWNER coder;
+
+      CREATE USER mlflow WITH PASSWORD '$MLFLOW_DB_PASSWORD';
+      CREATE DATABASE mlflow OWNER mlflow;
+
+      CREATE USER langfuse WITH PASSWORD '$LANGFUSE_DB_PASSWORD';
+      CREATE DATABASE langfuse OWNER langfuse;
+
+      CREATE USER gitea WITH PASSWORD '$GITEA_DB_PASSWORD';
+      CREATE DATABASE gitea OWNER gitea;
+
+      CREATE USER drone WITH PASSWORD '$DRONE_DB_PASSWORD';
+      CREATE DATABASE drone OWNER drone;
+    EOSQL

@@ -1,0 +1,61 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comfyui
+  namespace: ai-services
+  labels:
+    app: comfyui
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: comfyui
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: comfyui
+    spec:
+      runtimeClassName: nvidia
+      containers:
+        - name: comfyui
+          image: yanwk/comfyui-boot:cu128-megapak
+          ports:
+            - containerPort: 8188
+              name: http
+          env:
+            - name: CLI_ARGS
+              value: "--listen 0.0.0.0 --port 8188"
+          volumeMounts:
+            - name: data
+              mountPath: /workspace
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8188
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8188
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: comfyui-data
+      nodeSelector:
+        nvidia.com/gpu.present: "true"

@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+  namespace: observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  selector:
+    app: mlflow
+  ports:
+    - port: 5000
+      targetPort: 5000
+      name: http

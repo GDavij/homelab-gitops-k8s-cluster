@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coder
+  namespace: ci-cd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  selector:
+    app: coder
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http

@@ -1,0 +1,37 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: TLSOption
+metadata:
+  name: mtls-strict
+  namespace: database
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  minVersion: VersionTLS12
+  clientAuth:
+    clientAuthType: RequireAndVerifyClientCert
+    secretNames:
+      - monster-ca-trust
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: qdrant
+  namespace: database
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`qdrant.svc.k8s.monster.lab`)
+      kind: Rule
+      services:
+        - name: qdrant
+          port: 6333
+  tls:
+    secretName: monster-server-cert
+    options:
+      name: mtls-strict
+      namespace: database

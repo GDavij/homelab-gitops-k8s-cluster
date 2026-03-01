@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: comfyui-data
+  namespace: ai-services
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-hdd
+  resources:
+    requests:
+      storage: 30Gi

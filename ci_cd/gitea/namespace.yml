@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ci-cd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"

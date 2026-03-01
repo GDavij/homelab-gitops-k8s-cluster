@@ -1,0 +1,80 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drone
+  namespace: ci-cd
+  labels:
+    app: drone
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drone
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: drone
+    spec:
+      containers:
+        - name: drone
+          image: drone/drone:2.27.1
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: false
+          ports:
+            - containerPort: 80
+              name: http
+          env:
+            - name: DRONE_GITEA_SERVER
+              value: "http://gitea.ci-cd.svc:3000"
+            - name: DRONE_SERVER_HOST
+              value: "drone.svc.k8s.monster.lab"
+            - name: DRONE_SERVER_PROTO
+              value: "https"
+            - name: DRONE_DATABASE_DRIVER
+              value: "postgres"
+            - name: DRONE_DATABASE_DATASOURCE
+              valueFrom:
+                secretKeyRef:
+                  name: drone-secrets
+                  key: DRONE_DB_URL
+            - name: DRONE_RPC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: drone-secrets
+                  key: DRONE_RPC_SECRET
+            - name: DRONE_GITEA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: drone-secrets
+                  key: DRONE_GITEA_CLIENT_ID
+            - name: DRONE_GITEA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: drone-secrets
+                  key: DRONE_GITEA_CLIENT_SECRET
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 30
