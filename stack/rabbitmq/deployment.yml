@@ -20,6 +20,8 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      securityContext:
+        fsGroup: 999
       containers:
         - name: rabbitmq
           image: rabbitmq:3.13-management-alpine
@@ -32,12 +34,12 @@ spec:
               name: amqp
             - containerPort: 15672
               name: management
-          env:
-            - name: RABBITMQ_VM_MEMORY_HIGH_WATERMARK
-              value: "0.4"
           volumeMounts:
             - name: data
               mountPath: /var/lib/rabbitmq
+            - name: config
+              mountPath: /etc/rabbitmq/rabbitmq.conf
+              subPath: rabbitmq.conf
           resources:
             requests:
               cpu: 50m
@@ -59,3 +61,6 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: rabbitmq-data
+        - name: config
+          configMap:
+            name: rabbitmq-config

@@ -20,6 +20,8 @@ spec:
       labels:
         app: qdrant
     spec:
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: qdrant
           image: qdrant/qdrant:v1.17-unprivileged

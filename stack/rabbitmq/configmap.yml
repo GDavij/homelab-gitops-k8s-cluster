@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  namespace: stack
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+data:
+  rabbitmq.conf: |
+    vm_memory_high_watermark.relative = 0.4
