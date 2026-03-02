@@ -36,8 +36,17 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/otel
-            - name: tls-certs
-              mountPath: /certs
+            - name: tls-cert
+              mountPath: /certs/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: tls-cert
+              mountPath: /certs/tls.key
+              subPath: tls.key
+              readOnly: true
+            - name: ca-cert
+              mountPath: /certs/ca.crt
+              subPath: ca.crt
               readOnly: true
           resources:
             requests:
@@ -62,6 +71,9 @@ spec:
         - name: config
           configMap:
             name: otel-collector-config
-        - name: tls-certs
+        - name: tls-cert
           secret:
-            secretName: otel-collector-tls
+            secretName: monster-server-cert
+        - name: ca-cert
+          secret:
+            secretName: monster-ca-trust

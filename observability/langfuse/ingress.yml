@@ -13,7 +13,7 @@ spec:
     - match: Host(`langfuse.svc.k8s.monster.lab`)
       kind: Rule
       services:
-        - name: langfuse
+        - name: langfuse-web
           port: 3000
   tls:
     secretName: monster-server-cert

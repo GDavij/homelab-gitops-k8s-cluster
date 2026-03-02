@@ -1,0 +1,111 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: langfuse
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: homelab
+  source:
+    repoURL: https://langfuse.github.io/langfuse-k8s
+    chart: langfuse
+    targetRevision: "*"
+    helm:
+      valuesObject:
+        langfuse:
+          salt:
+            secretKeyRef:
+              name: langfuse-secrets
+              key: SALT
+          nextauth:
+            url: "https://langfuse.svc.k8s.monster.lab"
+            secret:
+              secretKeyRef:
+                name: langfuse-secrets
+                key: NEXTAUTH_SECRET
+          additionalEnv:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: LANGFUSE_DB_URL
+            - name: TELEMETRY_ENABLED
+              value: "false"
+          ingress:
+            enabled: false
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+        # Use your existing Postgres
+        postgresql:
+          deploy: false
+          host: "postgres.database.svc"
+          auth:
+            username: langfuse
+            password: "placeholder"
+
+        # Let the chart deploy ClickHouse
+        clickhouse:
+          auth:
+            password: "clickhouse-langfuse-pass"
+          persistence:
+            storageClass: "longhorn-hdd"
+            size: 10Gi
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          zookeeper:
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 250m
+                memory: 256Mi
+
+        # Use your existing Redis
+        redis:
+          deploy: false
+          host: "redis-stack.stack.svc"
+          port: 6379
+          auth:
+            password: ""
+
+        # Use your existing MinIO
+        s3:
+          deploy: false
+          bucket: "langfuse"
+          region: "us-east-1"
+          endpoint: "http://minio.storage.svc:9000"
+          forcePathStyle: true
+          accessKeyId:
+            secretKeyRef:
+              name: langfuse-secrets
+              key: MINIO_ROOT_USER
+          secretAccessKey:
+            secretKeyRef:
+              name: langfuse-secrets
+              key: MINIO_ROOT_PASSWORD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

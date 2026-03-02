@@ -38,11 +38,15 @@ spec:
                 secretKeyRef:
                   name: gitea-secrets
                   key: GITEA_DB_PASSWORD
+            - name: GITEA_APP_INI
+              value: /etc/gitea/app.ini
           volumeMounts:
             - name: data
               mountPath: /var/lib/gitea
-            - name: config
+            - name: gitea-config-rw
               mountPath: /etc/gitea
+            - name: config
+              mountPath: /etc/gitea-ro
           resources:
             requests:
               cpu: 100m
@@ -62,6 +66,15 @@ spec:
               port: 3000
             initialDelaySeconds: 60
             periodSeconds: 30
+      initContainers:
+        - name: copy-config
+          image: busybox:1.37
+          command: ["sh", "-c", "cp /etc/gitea-ro/app.ini /etc/gitea/app.ini"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/gitea-ro
+            - name: gitea-config-rw
+              mountPath: /etc/gitea
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -69,3 +82,5 @@ spec:
         - name: config
           configMap:
             name: gitea-config
+        - name: gitea-config-rw
+          emptyDir: {}
