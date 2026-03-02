@@ -22,6 +22,7 @@ spec:
     spec:
       securityContext:
         fsGroup: 70
+        fsGroupChangePolicy: Always
       containers:
         - name: postgres
           image: postgres:18-alpine3.23

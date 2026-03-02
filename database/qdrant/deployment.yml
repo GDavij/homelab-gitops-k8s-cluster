@@ -22,13 +22,14 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
+        fsGroupChangePolicy: Always
       containers:
         - name: qdrant
           image: qdrant/qdrant:v1.17-unprivileged
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: false
           ports:
             - containerPort: 6333
               name: http

@@ -22,6 +22,7 @@ spec:
     spec:
       securityContext:
         fsGroup: 999
+        fsGroupChangePolicy: Always
       containers:
         - name: mongodb
           image: mongo:8.0
