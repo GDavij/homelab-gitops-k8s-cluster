@@ -8,6 +8,9 @@ metadata:
     argocd.argoproj.io/sync-wave: "3"
 data:
   app.ini: |
+    [security]
+    INSTALL_LOCK = true
+
     [server]
     DOMAIN = gitea.svc.k8s.monster.lab
     ROOT_URL = https://gitea.svc.k8s.monster.lab

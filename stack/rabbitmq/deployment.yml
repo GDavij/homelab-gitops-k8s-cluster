@@ -31,8 +31,10 @@ spec:
             runAsUser: 999
             readOnlyRootFilesystem: false
           env:
+            - name: RABBITMQ_NODENAME
+              value: rabbit@localhost
             - name: RABBITMQ_MNESIA_DIR
-              value: /var/lib/rabbitmq/mnesia/rabbit@rabbitmq
+              value: /var/lib/rabbitmq/mnesia/rabbit@localhost
           ports:
             - containerPort: 5672
               name: amqp
@@ -54,13 +56,15 @@ spec:
           readinessProbe:
             exec:
               command: ["rabbitmq-diagnostics", "-q", "ping"]
-            initialDelaySeconds: 20
+            initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             exec:
-              command: ["rabbitmq-diagnostics", "-q", "status"]
-            initialDelaySeconds: 60
+              command: ["rabbitmq-diagnostics", "-q", "ping"]
+            initialDelaySeconds: 90
             periodSeconds: 30
+            timeoutSeconds: 5
       volumes:
         - name: data
           persistentVolumeClaim:
