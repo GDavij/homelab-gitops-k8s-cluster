@@ -32,7 +32,7 @@ spec:
               name: http
           env:
             - name: DRONE_GITEA_SERVER
-              value: "http://gitea.ci-cd.svc:3000"
+              value: "https://gitea.svc.k8s.monster.lab"
             - name: DRONE_SERVER_HOST
               value: "drone.svc.k8s.monster.lab"
             - name: DRONE_SERVER_PROTO
