@@ -60,6 +60,19 @@ spec:
           replicaCount: 1
           auth:
             password: "clickhouse-langfuse-pass"
+          extraOverrides: |
+            <clickhouse>
+              <remote_servers>
+                <default>
+                  <shard>
+                    <replica>
+                      <host>langfuse-clickhouse-shard0-0.langfuse-clickhouse-headless.observability.svc.k8s.monster.lab</host>
+                      <port>9000</port>
+                    </replica>
+                  </shard>
+                </default>
+              </remote_servers>
+            </clickhouse>
           persistence:
             storageClass: "longhorn-hdd"
             size: 10Gi
