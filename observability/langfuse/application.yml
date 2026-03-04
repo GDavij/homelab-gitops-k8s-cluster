@@ -53,9 +53,11 @@ spec:
             username: langfuse
             password: "placeholder"
 
-        # Let the chart deploy ClickHouse
+        # ClickHouse — single shard, single replica (single-node cluster)
         clickhouse:
           clusterDomain: "k8s.monster.lab"
+          shards: 1
+          replicaCount: 1
           auth:
             password: "clickhouse-langfuse-pass"
           persistence:
@@ -69,7 +71,9 @@ spec:
               cpu: 500m
               memory: 1Gi
           zookeeper:
+            enabled: true
             clusterDomain: "k8s.monster.lab"
+            replicaCount: 1
             resources:
               requests:
                 cpu: 50m
