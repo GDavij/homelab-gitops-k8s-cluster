@@ -27,14 +27,14 @@ spec:
               secretKeyRef:
                 name: langfuse-secrets
                 key: NEXTAUTH_SECRET
+          features:
+            telemetryEnabled: false
           additionalEnv:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: langfuse-secrets
                   key: LANGFUSE_DB_URL
-            - name: TELEMETRY_ENABLED
-              value: "false"
           ingress:
             enabled: false
           resources:
