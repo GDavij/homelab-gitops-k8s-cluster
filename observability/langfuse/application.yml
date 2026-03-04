@@ -55,6 +55,7 @@ spec:
 
         # Let the chart deploy ClickHouse
         clickhouse:
+          clusterDomain: "k8s.monster.lab"
           auth:
             password: "clickhouse-langfuse-pass"
           persistence:
@@ -68,6 +69,7 @@ spec:
               cpu: 500m
               memory: 1Gi
           zookeeper:
+            clusterDomain: "k8s.monster.lab"
             resources:
               requests:
                 cpu: 50m
