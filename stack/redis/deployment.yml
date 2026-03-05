@@ -29,7 +29,7 @@ spec:
             - containerPort: 6379
           env:
             - name: REDIS_ARGS
-              value: "--maxmemory 256mb --maxmemory-policy allkeys-lru"
+              value: '--maxmemory 256mb --maxmemory-policy noeviction --save "" --appendonly no --stop-writes-on-bgsave-error no'
           resources:
             requests:
               cpu: 50m

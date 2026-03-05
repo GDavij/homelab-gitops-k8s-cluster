@@ -35,15 +35,24 @@ spec:
                 secretKeyRef:
                   name: langfuse-secrets
                   key: LANGFUSE_DB_URL
+          web:
+            replicas: 1
+            deployment:
+              strategy:
+                type: Recreate
+            pod:
+              additionalEnv:
+                - name: NODE_OPTIONS
+                  value: "--max-old-space-size=768"
           ingress:
             enabled: false
           resources:
             requests:
               cpu: 50m
-              memory: 128Mi
+              memory: 256Mi
             limits:
               cpu: 500m
-              memory: 512Mi
+              memory: 1Gi
 
         # Use your existing Postgres
         postgresql:

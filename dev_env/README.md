@@ -19,13 +19,6 @@ Every dev pod in the `dev-env` namespace gets access to:
 | OTEL Collector | `otel-collector.observability.svc` | 4317 (gRPC), 4318 (HTTP) |
 | Vault | `vault.security.svc` | 8200 |
 
-## Secrets Available
-
-| K8s Secret | Keys | Source |
-|------------|------|--------|
-| `devenv-postgres-credentials` | `POSTGRES_PASSWORD` | Vault `secret/database/postgres` |
-| `devenv-minio-credentials` | `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD` | Vault `secret/storage/minio` |
-
 ## Usage in a Dev Pod
 
 ```yaml
@@ -36,12 +29,6 @@ spec:
         # All service endpoints as env vars
         - configMapRef:
             name: devenv-service-endpoints
-        # Postgres credentials
-        - secretRef:
-            name: devenv-postgres-credentials
-        # MinIO credentials
-        - secretRef:
-            name: devenv-minio-credentials
 ```
 
 Then in your code:
