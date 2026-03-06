@@ -7,7 +7,7 @@ metadata:
   labels:
     app: rabbitmq
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "5"
 spec:
   replicas: 1
   selector:
@@ -35,6 +35,16 @@ spec:
               value: rabbit@localhost
             - name: RABBITMQ_MNESIA_DIR
               value: /var/lib/rabbitmq/mnesia/rabbit@localhost
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: RABBITMQ_DEFAULT_PASS
           ports:
             - containerPort: 5672
               name: amqp
