@@ -47,6 +47,12 @@ spec:
               value: "24h"
             - name: CODER_AUTOBUILD_POLL_INTERVAL
               value: "1m"
+            - name: SSL_CERT_FILE
+              value: "/etc/ssl/coder-ca/ca.crt"
+          volumeMounts:
+            - name: ca-trust
+              mountPath: /etc/ssl/coder-ca
+              readOnly: true
           resources:
             requests:
               cpu: 100m
@@ -66,3 +72,7 @@ spec:
               port: 3000
             initialDelaySeconds: 30
             periodSeconds: 30
+      volumes:
+        - name: ca-trust
+          secret:
+            secretName: monster-ca-trust
