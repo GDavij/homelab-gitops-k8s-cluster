@@ -27,6 +27,10 @@ spec:
               secretKeyRef:
                 name: langfuse-secrets
                 key: NEXTAUTH_SECRET
+          encryptionKey:
+            secretKeyRef:
+              name: langfuse-secrets
+              key: ENCRYPTION_KEY
           features:
             telemetryEnabled: false
           additionalEnv:
