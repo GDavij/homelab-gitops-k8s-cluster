@@ -20,6 +20,10 @@ spec:
       labels:
         app: drone
     spec:
+      hostAliases:
+        - ip: "10.107.29.28"
+          hostnames:
+            - "gitea.svc.k8s.monster.lab"
       containers:
         - name: drone
           image: drone/drone:2.27.1
@@ -32,7 +36,9 @@ spec:
               name: http
           env:
             - name: DRONE_GITEA_SERVER
-              value: "http://gitea.ci-cd.svc.k8s.monster.lab:3000"
+              value: "https://gitea.svc.k8s.monster.lab"
+            - name: DRONE_GITEA_SKIP_VERIFY
+              value: "false"
             - name: DRONE_SERVER_HOST
               value: "drone.svc.k8s.monster.lab"
             - name: DRONE_SERVER_PROTO
@@ -59,6 +65,12 @@ spec:
                 secretKeyRef:
                   name: drone-secrets
                   key: DRONE_GITEA_CLIENT_SECRET
+            - name: SSL_CERT_FILE
+              value: "/etc/ssl/drone-ca/ca.crt"
+          volumeMounts:
+            - name: ca-trust
+              mountPath: /etc/ssl/drone-ca
+              readOnly: true
           resources:
             requests:
               cpu: 50m
@@ -78,3 +90,7 @@ spec:
               port: 80
             initialDelaySeconds: 30
             periodSeconds: 30
+      volumes:
+        - name: ca-trust
+          secret:
+            secretName: monster-ca-trust
