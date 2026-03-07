@@ -1,5 +1,18 @@
 ---
 apiVersion: traefik.io/v1alpha1
+kind: TLSOption
+metadata:
+  name: no-client-cert
+  namespace: ci-cd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  minVersion: VersionTLS12
+  clientAuth:
+    clientAuthType: NoClientCert
+
+---
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: coder
@@ -18,5 +31,5 @@ spec:
   tls:
     secretName: monster-server-cert
     options:
-      name: mtls-strict
+      name: no-client-cert
       namespace: ci-cd
