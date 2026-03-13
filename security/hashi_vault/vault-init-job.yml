@@ -1,0 +1,278 @@
+---
+# =============================================================================
+# VAULT INIT JOB — Fully automatic, idempotent bootstrap
+# =============================================================================
+# Runs at sync wave 3 (after vault-transit@1 and vault@2 are deployed).
+# Performs every step that was previously the manual vault_bootstrap.playbook.yml:
+#
+#   1. Wait for vault-transit to be reachable
+#   2. Initialize vault-transit (if not already) → saves unseal key to K8s Secret
+#   3. Unseal vault-transit
+#   4. Configure Transit engine + create autounseal token → saves to K8s Secret
+#   5. Wait for vault main to be reachable
+#   6. Initialize vault main (if not already) → saves root token to K8s Secret
+#   7. Enable KV v2 secrets engine on vault main
+#   8. Seed all application KV secrets (idempotent — never overwrites existing values)
+#   9. Create ESO vault-token Secret in external-secrets namespace
+#
+# IDEMPOTENCY: every step checks the current state before acting.
+# Safe to re-sync: a completed Job is left as-is by ArgoCD.
+# On re-run after deletion: all steps are skipped if already done.
+# =============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-init
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault-init
+    app.kubernetes.io/instance: vault-init
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    # BeforeHookCreation: if the Job is re-created (e.g. after manual deletion),
+    # it deletes the old one first so a fresh run can proceed cleanly.
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 600 # clean up completed job after 10 min
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vault-init
+        app.kubernetes.io/part-of: security
+    spec:
+      serviceAccountName: vault-init
+      restartPolicy: OnFailure
+      containers:
+        - name: vault-init
+          image: hashicorp/vault:1.19
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              # ─── helpers ──────────────────────────────────────────────────
+              TRANSIT="http://vault-transit.security.svc:8200"
+              MAIN="http://vault.security.svc:8200"
+              K8S="https://kubernetes.default.svc"
+              TOKEN_FILE="/var/run/secrets/kubernetes.io/serviceaccount/token"
+              CA_FILE="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
+              k8s_secret_put() {
+                # k8s_secret_put <namespace> <secret-name> <key> <value>
+                NS=$1; NAME=$2; KEY=$3; VALUE=$4
+                B64=$(echo -n "$VALUE" | base64 | tr -d '\n')
+                K8S_TOKEN=$(cat "$TOKEN_FILE")
+                # try create first, fall back to patch
+                curl -sf -X POST \
+                  "$K8S/api/v1/namespaces/$NS/secrets" \
+                  -H "Authorization: Bearer $K8S_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  --cacert "$CA_FILE" \
+                  -d "{\"apiVersion\":\"v1\",\"kind\":\"Secret\",\"metadata\":{\"name\":\"$NAME\",\"namespace\":\"$NS\"},\"data\":{\"$KEY\":\"$B64\"}}" \
+                  >/dev/null 2>&1 || \
+                curl -sf -X PATCH \
+                  "$K8S/api/v1/namespaces/$NS/secrets/$NAME" \
+                  -H "Authorization: Bearer $K8S_TOKEN" \
+                  -H "Content-Type: application/strategic-merge-patch+json" \
+                  --cacert "$CA_FILE" \
+                  -d "{\"data\":{\"$KEY\":\"$B64\"}}" \
+                  >/dev/null
+              }
+
+              vault_ensure_key() {
+                # vault_ensure_key <path> <key> <value>
+                # Never overwrites an existing non-empty value.
+                PATH_=$1; KEY=$2; VALUE=$3
+                CURRENT=$(vault kv get -field="$KEY" "$PATH_" 2>/dev/null) || true
+                if [ -n "$CURRENT" ]; then
+                  echo "  [skip] $PATH_.$KEY already set"
+                  return 0
+                fi
+                if vault kv get "$PATH_" >/dev/null 2>&1; then
+                  vault kv patch "$PATH_" "$KEY=$VALUE" >/dev/null
+                else
+                  vault kv put "$PATH_" "$KEY=$VALUE" >/dev/null
+                fi
+                echo "  [set]  $PATH_.$KEY"
+              }
+
+              rand_hex()  { cat /dev/urandom | tr -dc 'a-f0-9' | head -c "$1"; }
+              rand_b64()  { cat /dev/urandom | base64 | tr -d '\n/' | head -c "$1"; }
+
+              # ─── PHASE 1: vault-transit ────────────────────────────────────
+              echo ">>> Phase 1: vault-transit"
+
+              echo "Waiting for vault-transit..."
+              until curl -sf "$TRANSIT/v1/sys/health" >/dev/null 2>&1; do
+                sleep 3
+              done
+              echo "vault-transit reachable."
+
+              TSTATUS=$(curl -sf "$TRANSIT/v1/sys/seal-status")
+              T_INIT=$(echo "$TSTATUS" | grep -o '"initialized":[a-z]*' | cut -d: -f2)
+
+              if [ "$T_INIT" = "false" ]; then
+                echo "Initializing vault-transit..."
+                TINIT=$(curl -sf -X POST "$TRANSIT/v1/sys/init" \
+                  -d '{"secret_shares":1,"secret_threshold":1}')
+                T_UNSEAL=$(echo "$TINIT" | grep -o '"unseal_keys_b64":\["[^"]*"' | grep -o '[^"]*"$' | tr -d '"')
+                T_ROOT=$(echo "$TINIT" | grep -o '"root_token":"[^"]*"' | cut -d'"' -f4)
+
+                k8s_secret_put security vault-transit-unseal-key vault_transit_unseal_key "$T_UNSEAL"
+                k8s_secret_put security vault-transit-root-token token "$T_ROOT"
+                echo "vault-transit initialized. Unseal key stored."
+              else
+                echo "vault-transit already initialized."
+                # Read existing root token for transit engine config
+                K8S_TOKEN=$(cat "$TOKEN_FILE")
+                T_ROOT=$(curl -sf \
+                  "$K8S/api/v1/namespaces/security/secrets/vault-transit-root-token" \
+                  -H "Authorization: Bearer $K8S_TOKEN" \
+                  --cacert "$CA_FILE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4 | base64 -d)
+              fi
+
+              # Unseal vault-transit (idempotent — no-op if already unsealed)
+              T_UNSEAL_KEY=$(curl -sf \
+                "$K8S/api/v1/namespaces/security/secrets/vault-transit-unseal-key" \
+                -H "Authorization: Bearer $(cat $TOKEN_FILE)" \
+                --cacert "$CA_FILE" | grep -o '"vault_transit_unseal_key":"[^"]*"' | cut -d'"' -f4 | base64 -d)
+
+              SEALED=$(curl -sf "$TRANSIT/v1/sys/seal-status" | grep -o '"sealed":[a-z]*' | cut -d: -f2)
+              if [ "$SEALED" = "true" ]; then
+                echo "Unsealing vault-transit..."
+                curl -sf -X POST "$TRANSIT/v1/sys/unseal" \
+                  -d "{\"key\":\"$T_UNSEAL_KEY\"}" >/dev/null
+              fi
+
+              # Configure transit engine (idempotent)
+              export VAULT_ADDR="$TRANSIT"
+              vault login -no-print "$T_ROOT"
+              vault secrets enable transit >/dev/null 2>&1 || echo "  [skip] transit already enabled"
+              vault write -f transit/keys/autounseal >/dev/null 2>&1 || echo "  [skip] autounseal key exists"
+
+              # Create / refresh autounseal token
+              printf 'path "transit/encrypt/autounseal" { capabilities = ["update"] }\npath "transit/decrypt/autounseal" { capabilities = ["update"] }\n' \
+                > /tmp/transit-policy.hcl
+              vault policy write autounseal /tmp/transit-policy.hcl >/dev/null
+              T_TOKEN=$(vault token create -orphan -policy=autounseal \
+                -wrap-ttl=0 -period=768h -format=json | \
+                grep '"client_token"' | cut -d'"' -f4)
+              k8s_secret_put security vault-transit-token vault_transit_token "$T_TOKEN"
+              echo "vault-transit autounseal token stored."
+
+              # ─── PHASE 2: vault main ───────────────────────────────────────
+              echo ""
+              echo ">>> Phase 2: vault main"
+
+              echo "Waiting for vault main (may wait for transit token to take effect)..."
+              until curl -sf "$MAIN/v1/sys/health" >/dev/null 2>&1; do
+                sleep 5
+              done
+              echo "vault main reachable."
+
+              MSTATUS=$(curl -sf "$MAIN/v1/sys/seal-status")
+              M_INIT=$(echo "$MSTATUS" | grep -o '"initialized":[a-z]*' | cut -d: -f2)
+
+              if [ "$M_INIT" = "false" ]; then
+                echo "Initializing vault main..."
+                MINIT=$(curl -sf -X POST "$MAIN/v1/sys/init" \
+                  -d '{"secret_shares":1,"secret_threshold":1,"recovery_shares":1,"recovery_threshold":1}')
+                M_ROOT=$(echo "$MINIT" | grep -o '"root_token":"[^"]*"' | cut -d'"' -f4)
+                k8s_secret_put security vault-root-token token "$M_ROOT"
+                echo "vault main initialized. Root token stored in secret/security/vault-root-token."
+              else
+                echo "vault main already initialized."
+                K8S_TOKEN=$(cat "$TOKEN_FILE")
+                M_ROOT=$(curl -sf \
+                  "$K8S/api/v1/namespaces/security/secrets/vault-root-token" \
+                  -H "Authorization: Bearer $K8S_TOKEN" \
+                  --cacert "$CA_FILE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4 | base64 -d)
+              fi
+
+              export VAULT_ADDR="$MAIN"
+              vault login -no-print "$M_ROOT"
+
+              # ─── PHASE 3: KV seed ─────────────────────────────────────────
+              echo ""
+              echo ">>> Phase 3: KV secrets engine + seed"
+
+              vault secrets enable -path=secret kv-v2 >/dev/null 2>&1 || echo "  [skip] kv already enabled"
+
+              # ── Database passwords ──────────────────────────────────────────
+              PG_PASS=$(rand_hex 16)
+              CODER_PG_PASS=$(rand_hex 16)
+              MLFLOW_PG_PASS=$(rand_hex 16)
+              LANGFUSE_PG_PASS=$(rand_hex 16)
+              GITEA_PG_PASS=$(rand_hex 16)
+              DRONE_PG_PASS=$(rand_hex 16)
+
+              vault_ensure_key secret/database/postgres POSTGRES_PASSWORD     "$PG_PASS"
+              vault_ensure_key secret/database/postgres CODER_DB_PASSWORD     "$CODER_PG_PASS"
+              vault_ensure_key secret/database/postgres MLFLOW_DB_PASSWORD    "$MLFLOW_PG_PASS"
+              vault_ensure_key secret/database/postgres LANGFUSE_DB_PASSWORD  "$LANGFUSE_PG_PASS"
+              vault_ensure_key secret/database/postgres GITEA_DB_PASSWORD     "$GITEA_PG_PASS"
+              vault_ensure_key secret/database/postgres DRONE_DB_PASSWORD     "$DRONE_PG_PASS"
+
+              # derive connection URLs from whatever password is now stored
+              CODER_PW=$(vault kv get   -field=CODER_DB_PASSWORD    secret/database/postgres)
+              MLFLOW_PW=$(vault kv get  -field=MLFLOW_DB_PASSWORD   secret/database/postgres)
+              LANGFUSE_PW=$(vault kv get -field=LANGFUSE_DB_PASSWORD secret/database/postgres)
+              DRONE_PW=$(vault kv get   -field=DRONE_DB_PASSWORD    secret/database/postgres)
+
+              vault_ensure_key secret/database/postgres CODER_DB_URL    "postgres://coder:${CODER_PW}@postgres.database.svc:5432/coder?sslmode=disable"
+              vault_ensure_key secret/database/postgres MLFLOW_DB_URL   "postgres://mlflow:${MLFLOW_PW}@postgres.database.svc:5432/mlflow?sslmode=disable"
+              vault_ensure_key secret/database/postgres LANGFUSE_DB_URL "postgres://langfuse:${LANGFUSE_PW}@postgres.database.svc:5432/langfuse?sslmode=disable"
+              vault_ensure_key secret/database/postgres DRONE_DB_URL    "postgres://drone:${DRONE_PW}@postgres.database.svc:5432/drone?sslmode=disable"
+
+              # ── MinIO ───────────────────────────────────────────────────────
+              vault_ensure_key secret/storage/minio MINIO_ROOT_USER     "admin"
+              vault_ensure_key secret/storage/minio MINIO_ROOT_PASSWORD "$(rand_hex 16)"
+
+              # ── Langfuse ────────────────────────────────────────────────────
+              vault_ensure_key secret/observability/langfuse NEXTAUTH_SECRET  "$(rand_b64 32)"
+              vault_ensure_key secret/observability/langfuse SALT             "$(rand_hex 16)"
+              vault_ensure_key secret/observability/langfuse ENCRYPTION_KEY   "$(rand_hex 32)"
+
+              # ── Drone CI ────────────────────────────────────────────────────
+              vault_ensure_key secret/ci-cd/drone DRONE_RPC_SECRET           "$(rand_hex 32)"
+              vault_ensure_key secret/ci-cd/drone DRONE_GITEA_CLIENT_ID      " "
+              vault_ensure_key secret/ci-cd/drone DRONE_GITEA_CLIENT_SECRET  " "
+
+              # ── RabbitMQ ────────────────────────────────────────────────────
+              vault_ensure_key secret/stack/rabbitmq RABBITMQ_DEFAULT_USER "admin"
+              vault_ensure_key secret/stack/rabbitmq RABBITMQ_DEFAULT_PASS "$(rand_hex 16)"
+
+              # ── Coder ───────────────────────────────────────────────────────
+              CODER_PW=$(vault kv get -field=CODER_DB_PASSWORD secret/database/postgres)
+              vault_ensure_key secret/ci-cd/coder CODER_PG_CONNECTION_URL \
+                "postgres://coder:${CODER_PW}@postgres.database.svc:5432/coder?sslmode=disable"
+
+              echo "KV secrets seeded."
+
+              # ─── PHASE 4: ESO token ────────────────────────────────────────
+              echo ""
+              echo ">>> Phase 4: ESO authentication token"
+
+              printf 'path "secret/*" { capabilities = ["create","read","update","delete","list"] }\npath "sys/mounts" { capabilities = ["read","list"] }\npath "sys/mounts/*" { capabilities = ["read"] }\n' \
+                > /tmp/eso-policy.hcl
+              vault policy write eso-readonly /tmp/eso-policy.hcl >/dev/null
+
+              ESO_TOKEN=$(vault token create -orphan -policy=eso-readonly \
+                -period=8760h -format=json | grep '"client_token"' | cut -d'"' -f4)
+              k8s_secret_put external-secrets vault-token token "$ESO_TOKEN"
+              echo "ESO vault-token stored in external-secrets namespace."
+
+              echo ""
+              echo "=== vault-init complete. All systems ready. ==="
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          env:
+            - name: VAULT_SKIP_VERIFY
+              value: "true"

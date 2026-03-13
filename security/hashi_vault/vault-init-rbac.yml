@@ -1,0 +1,105 @@
+---
+# =============================================================================
+# vault-init ServiceAccount
+# Used exclusively by the vault-init Job — scoped to minimum needed permissions.
+# =============================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-init
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault-init
+    app.kubernetes.io/instance: vault-init
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+
+---
+# =============================================================================
+# Role — read/write Secrets in the security namespace
+# (vault-transit-unseal-key, vault-transit-token, vault-transit-root-token)
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vault-init
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault-init
+    app.kubernetes.io/instance: vault-init
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "patch", "update"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vault-init
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault-init
+    app.kubernetes.io/instance: vault-init
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vault-init
+subjects:
+  - kind: ServiceAccount
+    name: vault-init
+    namespace: security
+
+---
+# =============================================================================
+# Role — write the vault-token Secret into the external-secrets namespace.
+# ESO reads this to authenticate to Vault via the ClusterSecretStore.
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vault-init
+  namespace: external-secrets
+  labels:
+    app.kubernetes.io/name: vault-init
+    app.kubernetes.io/instance: vault-init
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "patch", "update"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vault-init
+  namespace: external-secrets
+  labels:
+    app.kubernetes.io/name: vault-init
+    app.kubernetes.io/instance: vault-init
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vault-init
+subjects:
+  - kind: ServiceAccount
+    name: vault-init
+    namespace: security
