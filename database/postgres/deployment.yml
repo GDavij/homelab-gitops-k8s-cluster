@@ -5,20 +5,27 @@ metadata:
   name: postgres
   namespace: database
   labels:
-    app: postgres
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/instance: postgres
+    app.kubernetes.io/part-of: database
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/instance: postgres
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: postgres
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/instance: postgres
+        app.kubernetes.io/part-of: database
+        app.kubernetes.io/managed-by: argocd
     spec:
       securityContext:
         fsGroup: 70
@@ -31,7 +38,9 @@ spec:
             runAsUser: 70
             readOnlyRootFilesystem: false
           ports:
-            - containerPort: 5432
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
           env:
             - name: POSTGRES_USER
               value: postgres

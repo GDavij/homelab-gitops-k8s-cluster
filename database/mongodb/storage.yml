@@ -4,12 +4,17 @@ kind: PersistentVolumeClaim
 metadata:
   name: mongodb-data
   namespace: database
+  labels:
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/instance: mongodb
+    app.kubernetes.io/part-of: database
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn-hdd
+  storageClassName: local-path-hdd
   resources:
     requests:
       storage: 5Gi

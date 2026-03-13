@@ -4,15 +4,23 @@ kind: Service
 metadata:
   name: gitea
   namespace: ci-cd
+  labels:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   selector:
-    app: gitea
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
   ports:
-    - port: 3000
+    - name: http
+      port: 3000
       targetPort: 3000
-      name: http
-    - port: 2222
+      protocol: TCP
+    - name: ssh
+      port: 2222
       targetPort: 2222
-      name: ssh
+      protocol: TCP

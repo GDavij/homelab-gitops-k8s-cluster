@@ -4,6 +4,11 @@ kind: ConfigMap
 metadata:
   name: postgres-init
   namespace: database
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/instance: postgres
+    app.kubernetes.io/part-of: database
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 data:

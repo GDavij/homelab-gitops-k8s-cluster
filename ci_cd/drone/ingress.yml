@@ -1,11 +1,17 @@
 ---
+# ─── Drone CI ─────────────────────────────────────────────────────────────────
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: drone
   namespace: ci-cd
+  labels:
+    app.kubernetes.io/name: drone
+    app.kubernetes.io/instance: drone
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   entryPoints:
     - websecure
@@ -18,5 +24,5 @@ spec:
   tls:
     secretName: monster-server-cert
     options:
-      name: no-client-cert
-      namespace: ci-cd
+      name: mtls-strict
+      namespace: traefik

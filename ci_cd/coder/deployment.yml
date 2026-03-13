@@ -5,18 +5,25 @@ metadata:
   name: coder
   namespace: ci-cd
   labels:
-    app: coder
+    app.kubernetes.io/name: coder
+    app.kubernetes.io/instance: coder
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: coder
+      app.kubernetes.io/name: coder
+      app.kubernetes.io/instance: coder
   template:
     metadata:
       labels:
-        app: coder
+        app.kubernetes.io/name: coder
+        app.kubernetes.io/instance: coder
+        app.kubernetes.io/part-of: ci-cd
+        app.kubernetes.io/managed-by: argocd
     spec:
       serviceAccountName: coder
       hostAliases:
@@ -31,8 +38,9 @@ spec:
             runAsUser: 1000
             readOnlyRootFilesystem: false
           ports:
-            - containerPort: 3000
-              name: http
+            - name: http
+              containerPort: 3000
+              protocol: TCP
           env:
             - name: CODER_PG_CONNECTION_URL
               valueFrom:

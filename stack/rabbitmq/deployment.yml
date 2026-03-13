@@ -5,20 +5,27 @@ metadata:
   name: rabbitmq
   namespace: stack
   labels:
-    app: rabbitmq
+    app.kubernetes.io/name: rabbitmq
+    app.kubernetes.io/instance: rabbitmq
+    app.kubernetes.io/part-of: stack
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: rabbitmq
+      app.kubernetes.io/name: rabbitmq
+      app.kubernetes.io/instance: rabbitmq
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: rabbitmq
+        app.kubernetes.io/name: rabbitmq
+        app.kubernetes.io/instance: rabbitmq
+        app.kubernetes.io/part-of: stack
+        app.kubernetes.io/managed-by: argocd
     spec:
       securityContext:
         fsGroup: 999
@@ -46,10 +53,12 @@ spec:
                   name: rabbitmq-credentials
                   key: RABBITMQ_DEFAULT_PASS
           ports:
-            - containerPort: 5672
-              name: amqp
-            - containerPort: 15672
-              name: management
+            - name: amqp
+              containerPort: 5672
+              protocol: TCP
+            - name: management
+              containerPort: 15672
+              protocol: TCP
           volumeMounts:
             - name: data
               mountPath: /var/lib/rabbitmq/mnesia

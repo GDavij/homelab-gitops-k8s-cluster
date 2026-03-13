@@ -1,0 +1,69 @@
+---
+# =============================================================================
+# TRAEFIK — ZERO-TRUST EDGE mTLS
+# Namespace for the Traefik edge layer (bootstrapped by Ansible Phase 0)
+# All resources here are managed by ArgoCD after bootstrap.
+# =============================================================================
+
+# ─── Global TLSOption: Enforce mTLS at ALL websecure entrypoints ─────────────
+# Any IngressRoute that references this TLSOption will require clients to
+# present a certificate signed by the monster-ca-trust private CA.
+#
+# SECURITY MODEL:
+#   External → Traefik: mTLS (certificate authentication required)
+#   Traefik → Pod:      Plain HTTP (internal, no TLS overhead)
+#   Pod → Pod:          Plain HTTP (east-west traffic, no TLS overhead)
+# =============================================================================
+apiVersion: traefik.io/v1alpha1
+kind: TLSOption
+metadata:
+  name: mtls-strict
+  namespace: traefik
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/part-of: traefik
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  minVersion: VersionTLS12
+  cipherSuites:
+    - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+    - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+    - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+  clientAuth:
+    clientAuthType: RequireAndVerifyClientCert
+    secretNames:
+      - monster-ca-trust
+
+---
+# ─── Traefik Dashboard IngressRoute ───────────────────────────────────────────
+# Protected by mTLS — only clients with a valid certificate from monster-ca-trust
+# can reach the dashboard. Do NOT expose this without mTLS.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: traefik
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/part-of: traefik
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.svc.k8s.monster.lab`)
+      kind: Rule
+      services:
+        - name: api@internal
+          kind: TraefikService
+  tls:
+    secretName: monster-server-cert
+    options:
+      name: mtls-strict
+      namespace: traefik

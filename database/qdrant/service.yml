@@ -4,15 +4,23 @@ kind: Service
 metadata:
   name: qdrant
   namespace: database
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/instance: qdrant
+    app.kubernetes.io/part-of: database
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   selector:
-    app: qdrant
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/instance: qdrant
   ports:
-    - port: 6333
+    - name: http
+      port: 6333
       targetPort: 6333
-      name: http
-    - port: 6334
+      protocol: TCP
+    - name: grpc
+      port: 6334
       targetPort: 6334
-      name: grpc
+      protocol: TCP

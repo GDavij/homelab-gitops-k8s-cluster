@@ -4,11 +4,19 @@ kind: Service
 metadata:
   name: redis-stack
   namespace: stack
+  labels:
+    app.kubernetes.io/name: redis-stack
+    app.kubernetes.io/instance: redis-stack
+    app.kubernetes.io/part-of: stack
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
   selector:
-    app: redis-stack
+    app.kubernetes.io/name: redis-stack
+    app.kubernetes.io/instance: redis-stack
   ports:
-    - port: 6379
+    - name: redis
+      port: 6379
       targetPort: 6379
+      protocol: TCP

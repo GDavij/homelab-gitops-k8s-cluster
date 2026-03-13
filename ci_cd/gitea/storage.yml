@@ -4,12 +4,17 @@ kind: PersistentVolumeClaim
 metadata:
   name: gitea-data
   namespace: ci-cd
+  labels:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn-hdd
+  storageClassName: local-path-hdd
   resources:
     requests:
-      storage: 5Gi
+      storage: 10Gi

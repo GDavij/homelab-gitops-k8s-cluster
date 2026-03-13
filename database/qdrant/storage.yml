@@ -4,12 +4,17 @@ kind: PersistentVolumeClaim
 metadata:
   name: qdrant-data
   namespace: database
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/instance: qdrant
+    app.kubernetes.io/part-of: database
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn-ssd
+  storageClassName: local-path-ssd
   resources:
     requests:
       storage: 5Gi

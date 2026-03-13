@@ -4,11 +4,19 @@ kind: Service
 metadata:
   name: postgres
   namespace: database
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/instance: postgres
+    app.kubernetes.io/part-of: database
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
   selector:
-    app: postgres
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/instance: postgres
   ports:
-    - port: 5432
+    - name: postgres
+      port: 5432
       targetPort: 5432
+      protocol: TCP

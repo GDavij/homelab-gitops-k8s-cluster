@@ -5,20 +5,27 @@ metadata:
   name: minio
   namespace: storage
   labels:
-    app: minio
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: minio
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: minio
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/instance: minio
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: minio
+        app.kubernetes.io/name: minio
+        app.kubernetes.io/instance: minio
+        app.kubernetes.io/part-of: storage
+        app.kubernetes.io/managed-by: argocd
     spec:
       securityContext:
         fsGroup: 1000
@@ -32,10 +39,12 @@ spec:
             readOnlyRootFilesystem: false
           command: ["minio", "server", "/data", "--console-address", ":9001"]
           ports:
-            - containerPort: 9000
-              name: api
-            - containerPort: 9001
-              name: console
+            - name: api
+              containerPort: 9000
+              protocol: TCP
+            - name: console
+              containerPort: 9001
+              protocol: TCP
           envFrom:
             - secretRef:
                 name: minio-credentials

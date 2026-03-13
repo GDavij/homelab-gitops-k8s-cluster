@@ -5,28 +5,36 @@ metadata:
   name: ollama
   namespace: ai-services
   labels:
-    app: ollama
+    app.kubernetes.io/name: ollama
+    app.kubernetes.io/instance: ollama
+    app.kubernetes.io/part-of: ai-services
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "4"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ollama
+      app.kubernetes.io/name: ollama
+      app.kubernetes.io/instance: ollama
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: ollama
+        app.kubernetes.io/name: ollama
+        app.kubernetes.io/instance: ollama
+        app.kubernetes.io/part-of: ai-services
+        app.kubernetes.io/managed-by: argocd
     spec:
       runtimeClassName: nvidia
       containers:
         - name: ollama
           image: ollama/ollama:0.17.5
           ports:
-            - containerPort: 11434
-              name: http
+            - name: http
+              containerPort: 11434
+              protocol: TCP
           env:
             - name: OLLAMA_HOST
               value: "0.0.0.0"

@@ -4,15 +4,23 @@ kind: Service
 metadata:
   name: rabbitmq
   namespace: stack
+  labels:
+    app.kubernetes.io/name: rabbitmq
+    app.kubernetes.io/instance: rabbitmq
+    app.kubernetes.io/part-of: stack
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   selector:
-    app: rabbitmq
+    app.kubernetes.io/name: rabbitmq
+    app.kubernetes.io/instance: rabbitmq
   ports:
-    - port: 5672
+    - name: amqp
+      port: 5672
       targetPort: 5672
-      name: amqp
-    - port: 15672
+      protocol: TCP
+    - name: management
+      port: 15672
       targetPort: 15672
-      name: management
+      protocol: TCP

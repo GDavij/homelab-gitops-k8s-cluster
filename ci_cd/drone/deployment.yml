@@ -5,20 +5,27 @@ metadata:
   name: drone
   namespace: ci-cd
   labels:
-    app: drone
+    app.kubernetes.io/name: drone
+    app.kubernetes.io/instance: drone
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: drone
+      app.kubernetes.io/name: drone
+      app.kubernetes.io/instance: drone
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: drone
+        app.kubernetes.io/name: drone
+        app.kubernetes.io/instance: drone
+        app.kubernetes.io/part-of: ci-cd
+        app.kubernetes.io/managed-by: argocd
     spec:
       hostAliases:
         - ip: "10.107.29.28"
@@ -32,8 +39,9 @@ spec:
             runAsUser: 1000
             readOnlyRootFilesystem: false
           ports:
-            - containerPort: 80
-              name: http
+            - name: http
+              containerPort: 80
+              protocol: TCP
           env:
             - name: DRONE_GITEA_SERVER
               value: "https://gitea.svc.k8s.monster.lab"

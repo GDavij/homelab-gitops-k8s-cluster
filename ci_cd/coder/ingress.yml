@@ -1,24 +1,17 @@
 ---
-apiVersion: traefik.io/v1alpha1
-kind: TLSOption
-metadata:
-  name: no-client-cert
-  namespace: ci-cd
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-spec:
-  minVersion: VersionTLS12
-  clientAuth:
-    clientAuthType: NoClientCert
-
----
+# ─── Coder IDE ────────────────────────────────────────────────────────────────
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: coder
   namespace: ci-cd
+  labels:
+    app.kubernetes.io/name: coder
+    app.kubernetes.io/instance: coder
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   entryPoints:
     - websecure
@@ -31,5 +24,5 @@ spec:
   tls:
     secretName: monster-server-cert
     options:
-      name: no-client-cert
-      namespace: ci-cd
+      name: mtls-strict
+      namespace: traefik

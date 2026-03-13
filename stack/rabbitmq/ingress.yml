@@ -1,26 +1,19 @@
 ---
-apiVersion: traefik.io/v1alpha1
-kind: TLSOption
-metadata:
-  name: mtls-strict
-  namespace: stack
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-spec:
-  minVersion: VersionTLS12
-  clientAuth:
-    clientAuthType: RequireAndVerifyClientCert
-    secretNames:
-      - monster-ca-trust
-
----
+# ─── RabbitMQ Management UI ───────────────────────────────────────────────────
+# Only the management UI is exposed externally (mTLS protected).
+# AMQP (5672) is internal-only — accessed as rabbitmq.stack.svc:5672 from pods.
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: rabbitmq
   namespace: stack
+  labels:
+    app.kubernetes.io/name: rabbitmq
+    app.kubernetes.io/instance: rabbitmq
+    app.kubernetes.io/part-of: stack
+    app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   entryPoints:
     - websecure
@@ -34,4 +27,4 @@ spec:
     secretName: monster-server-cert
     options:
       name: mtls-strict
-      namespace: stack
+      namespace: traefik

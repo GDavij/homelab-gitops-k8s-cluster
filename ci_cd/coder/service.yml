@@ -4,12 +4,19 @@ kind: Service
 metadata:
   name: coder
   namespace: ci-cd
+  labels:
+    app.kubernetes.io/name: coder
+    app.kubernetes.io/instance: coder
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   selector:
-    app: coder
+    app.kubernetes.io/name: coder
+    app.kubernetes.io/instance: coder
   ports:
-    - port: 3000
+    - name: http
+      port: 3000
       targetPort: 3000
-      name: http
+      protocol: TCP

@@ -1,26 +1,17 @@
 ---
-apiVersion: traefik.io/v1alpha1
-kind: TLSOption
-metadata:
-  name: mtls-strict
-  namespace: ci-cd
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-spec:
-  minVersion: VersionTLS12
-  clientAuth:
-    clientAuthType: RequireAndVerifyClientCert
-    secretNames:
-      - monster-ca-trust
-
----
+# ─── Gitea HTTP UI ────────────────────────────────────────────────────────────
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: gitea
   namespace: ci-cd
+  labels:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   entryPoints:
     - websecure
@@ -33,5 +24,30 @@ spec:
   tls:
     secretName: monster-server-cert
     options:
-      name: no-client-cert
-      namespace: ci-cd
+      name: mtls-strict
+      namespace: traefik
+
+---
+# ─── Gitea SSH (TCP passthrough) ──────────────────────────────────────────────
+# Git-over-SSH is a TCP stream — Traefik handles it via the tcp entryPoint.
+# No TLS termination here; SSH handles its own encryption.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: gitea-ssh
+  namespace: ci-cd
+  labels:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  entryPoints:
+    - ssh
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: gitea
+          port: 2222

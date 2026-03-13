@@ -4,12 +4,17 @@ kind: PersistentVolumeClaim
 metadata:
   name: rabbitmq-data
   namespace: stack
+  labels:
+    app.kubernetes.io/name: rabbitmq
+    app.kubernetes.io/instance: rabbitmq
+    app.kubernetes.io/part-of: stack
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn-hdd
+  storageClassName: local-path-hdd
   resources:
     requests:
       storage: 2Gi

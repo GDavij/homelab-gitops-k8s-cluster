@@ -5,20 +5,27 @@ metadata:
   name: qdrant
   namespace: database
   labels:
-    app: qdrant
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/instance: qdrant
+    app.kubernetes.io/part-of: database
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: qdrant
+      app.kubernetes.io/name: qdrant
+      app.kubernetes.io/instance: qdrant
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: qdrant
+        app.kubernetes.io/name: qdrant
+        app.kubernetes.io/instance: qdrant
+        app.kubernetes.io/part-of: database
+        app.kubernetes.io/managed-by: argocd
     spec:
       securityContext:
         fsGroup: 1000
@@ -31,10 +38,12 @@ spec:
             runAsUser: 1000
             readOnlyRootFilesystem: false
           ports:
-            - containerPort: 6333
-              name: http
-            - containerPort: 6334
-              name: grpc
+            - name: http
+              containerPort: 6333
+              protocol: TCP
+            - name: grpc
+              containerPort: 6334
+              protocol: TCP
           volumeMounts:
             - name: data
               mountPath: /qdrant/storage

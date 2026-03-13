@@ -5,28 +5,36 @@ metadata:
   name: comfyui
   namespace: ai-services
   labels:
-    app: comfyui
+    app.kubernetes.io/name: comfyui
+    app.kubernetes.io/instance: comfyui
+    app.kubernetes.io/part-of: ai-services
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "4"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: comfyui
+      app.kubernetes.io/name: comfyui
+      app.kubernetes.io/instance: comfyui
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: comfyui
+        app.kubernetes.io/name: comfyui
+        app.kubernetes.io/instance: comfyui
+        app.kubernetes.io/part-of: ai-services
+        app.kubernetes.io/managed-by: argocd
     spec:
       runtimeClassName: nvidia
       containers:
         - name: comfyui
           image: yanwk/comfyui-boot:cu128-megapak
           ports:
-            - containerPort: 8188
-              name: http
+            - name: http
+              containerPort: 8188
+              protocol: TCP
           env:
             - name: CLI_ARGS
               value: "--listen 0.0.0.0 --port 8188"

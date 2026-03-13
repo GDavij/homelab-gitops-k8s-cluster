@@ -88,7 +88,7 @@ spec:
                 </remote_servers>
               </clickhouse>
           persistence:
-            storageClass: "longhorn-hdd"
+            storageClass: "local-path-hdd"
             size: 10Gi
           resources:
             requests:

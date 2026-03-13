@@ -1,9 +1,15 @@
 ---
+# ─── ComfyUI Image Generation UI ─────────────────────────────────────────────
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: comfyui
   namespace: ai-services
+  labels:
+    app.kubernetes.io/name: comfyui
+    app.kubernetes.io/instance: comfyui
+    app.kubernetes.io/part-of: ai-services
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "4"
 spec:
@@ -19,4 +25,4 @@ spec:
     secretName: monster-server-cert
     options:
       name: mtls-strict
-      namespace: ai-services
+      namespace: traefik

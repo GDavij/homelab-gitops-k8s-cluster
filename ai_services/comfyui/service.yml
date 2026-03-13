@@ -4,12 +4,19 @@ kind: Service
 metadata:
   name: comfyui
   namespace: ai-services
+  labels:
+    app.kubernetes.io/name: comfyui
+    app.kubernetes.io/instance: comfyui
+    app.kubernetes.io/part-of: ai-services
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "4"
 spec:
   selector:
-    app: comfyui
+    app.kubernetes.io/name: comfyui
+    app.kubernetes.io/instance: comfyui
   ports:
-    - port: 8188
+    - name: http
+      port: 8188
       targetPort: 8188
-      name: http
+      protocol: TCP

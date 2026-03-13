@@ -5,20 +5,27 @@ metadata:
   name: gitea
   namespace: ci-cd
   labels:
-    app: gitea
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: gitea
+      app.kubernetes.io/name: gitea
+      app.kubernetes.io/instance: gitea
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: gitea
+        app.kubernetes.io/name: gitea
+        app.kubernetes.io/instance: gitea
+        app.kubernetes.io/part-of: ci-cd
+        app.kubernetes.io/managed-by: argocd
     spec:
       securityContext:
         runAsUser: 1000
@@ -28,10 +35,12 @@ spec:
         - name: gitea
           image: gitea/gitea:1.25-rootless
           ports:
-            - containerPort: 3000
-              name: http
-            - containerPort: 2222
-              name: ssh
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+            - name: ssh
+              containerPort: 2222
+              protocol: TCP
           env:
             - name: GITEA__database__PASSWD
               valueFrom:
