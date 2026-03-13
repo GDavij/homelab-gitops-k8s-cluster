@@ -42,6 +42,8 @@ spec:
               add:
                 - NET_BIND_SERVICE
           args:
+            - "--ping=true"
+            - "--entrypoints.traefik.address=:8080"
             - "--api.dashboard=true"
             - "--api.insecure=false"
             - "--accesslog=true"
@@ -51,6 +53,10 @@ spec:
             - "--providers.kubernetescrd.allowCrossNamespace=true"
             - "--providers.kubernetesingress"
           ports:
+            - name: traefik
+              containerPort: 8080
+              hostPort: 8080
+              protocol: TCP
             - name: websecure
               containerPort: 443
               hostPort: 443
