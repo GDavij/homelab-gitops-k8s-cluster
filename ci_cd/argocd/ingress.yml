@@ -1,0 +1,42 @@
+---
+# =============================================================================
+# ArgoCD — Namespace
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+
+---
+# =============================================================================
+# ArgoCD — IngressRoute (TCP passthrough)
+# ArgoCD serves its own TLS (gRPC + browser), so Traefik must NOT terminate it.
+# Passthrough forwards the raw TLS stream; ArgoCD's own cert is presented.
+# The monster-server-cert SNI match ensures routing hits the right backend.
+# =============================================================================
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: argocd-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-server
+    app.kubernetes.io/instance: argocd-server
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: HostSNI(`argocd.svc.k8s.monster.lab`)
+      services:
+        - name: argocd-server
+          port: 443
+  tls:
+    passthrough: true
