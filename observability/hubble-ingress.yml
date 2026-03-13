@@ -1,0 +1,27 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hubble-ui
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: hubble-ui
+    app.kubernetes.io/instance: hubble-ui
+    app.kubernetes.io/part-of: cilium
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`hubble-ui.svc.k8s.monster.lab`)
+      kind: Rule
+      services:
+        - name: hubble-ui
+          port: 80
+  tls:
+    secretName: monster-server-cert
+    options:
+      name: mtls-strict
+      namespace: traefik

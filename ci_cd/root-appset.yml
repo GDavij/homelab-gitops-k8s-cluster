@@ -1,0 +1,37 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: homelab-cluster
+  namespace: argocd
+  labels:
+    app.kubernetes.io/managed-by: argocd
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/GDavij/homelab-gitops-k8s-cluster.git
+        revision: main
+        directories:
+          - path: "*/*"
+          - path: "ci_cd/argocd"
+            exclude: true
+  template:
+    metadata:
+      name: "{{path.basename}}"
+      labels:
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      project: homelab
+      source:
+        repoURL: https://github.com/GDavij/homelab-gitops-k8s-cluster.git
+        targetRevision: main
+        path: "{{path}}"
+      destination:
+        server: https://kubernetes.default.svc
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
