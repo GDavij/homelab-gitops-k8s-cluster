@@ -11,6 +11,8 @@ metadata:
   name: local-path-storage
   labels:
     app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 
 ---
 # =============================================================================
@@ -170,6 +172,13 @@ data:
       - name: helper-pod
         image: busybox
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 1m
+            memory: 4Mi
+          limits:
+            cpu: 10m
+            memory: 8Mi
 
 ---
 # ─── Deployment ───────────────────────────────────────────────────────────────
@@ -184,7 +193,7 @@ metadata:
     app.kubernetes.io/part-of: storage
     app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   replicas: 1
   selector:
@@ -204,6 +213,13 @@ spec:
         - name: local-path-provisioner
           image: rancher/local-path-provisioner:v0.0.35
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
           command:
             - local-path-provisioner
             - --debug
@@ -403,6 +419,13 @@ data:
       - name: helper-pod
         image: busybox
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 1m
+            memory: 4Mi
+          limits:
+            cpu: 10m
+            memory: 8Mi
 
 ---
 # ─── Deployment ───────────────────────────────────────────────────────────────
@@ -437,6 +460,13 @@ spec:
         - name: local-path-provisioner
           image: rancher/local-path-provisioner:v0.0.35
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
           command:
             - local-path-provisioner
             - --debug
@@ -472,7 +502,7 @@ metadata:
     app.kubernetes.io/part-of: storage
     app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "1"
 provisioner: rancher.io/local-path-hdd
 volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Delete
