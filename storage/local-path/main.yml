@@ -1,7 +1,7 @@
 ## =============================================================================
 ## DUAL-TIER LOCAL PATH PROVISIONER
-## Tier 1 (SSD): RAID0 2x SSDs over XFS @ /mnt/ssd_raid   → local-path-ssd (DEFAULT)
-## Tier 2 (HDD): Single HDD over XFS 1TiB @ /mnt/hdd_storage → local-path-hdd
+## Tier 1 (SSD): RAID0 2x SSDs over XFS @ /fast-storage      → local-path-ssd (DEFAULT)
+## Tier 2 (HDD): Single HDD over XFS 1TiB @ /cold-storage    → local-path-hdd
 ## =============================================================================
 
 # ─── Namespace ────────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ data:
       "nodePathMap": [
         {
           "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
-          "paths": ["/mnt/ssd_raid"]
+          "paths": ["/fast-storage"]
         }
       ]
     }
@@ -392,7 +392,7 @@ data:
       "nodePathMap": [
         {
           "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
-          "paths": ["/mnt/hdd_storage"]
+          "paths": ["/cold-storage"]
         }
       ]
     }

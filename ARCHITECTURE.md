@@ -77,8 +77,8 @@ The node has two physically distinct storage tiers, provisioned through two inde
 
 | Tier | Hardware | Mount Point | StorageClass | Default? | Capacity |
 |---|---|---|---|---|---|
-| **FAST** | 2× SSD in RAID0 over XFS | `/mnt/ssd_raid` | `local-path-ssd` | ✅ Yes | ~444 GiB |
-| **SLOW** | 1× HDD over XFS | `/mnt/hdd_storage` | `local-path-hdd` | ❌ No | ~1 TiB |
+| **FAST** | 2× SSD in RAID0 over XFS | `/fast-storage` | `local-path-ssd` | ✅ Yes | ~444 GiB |
+| **SLOW** | 1× HDD over XFS | `/cold-storage` | `local-path-hdd` | ❌ No | ~1 TiB |
 
 ### 2.2 Allocation Rules
 
@@ -104,10 +104,10 @@ Each `StorageClass` is served by a **dedicated, isolated provisioner deployment*
 local-path-storage/
 ├── ServiceAccount: local-path-ssd-service-account
 ├── Deployment:     local-path-ssd-provisioner  (--provisioner-name rancher.io/local-path-ssd)
-├── ConfigMap:      local-path-ssd-config        (nodePathMap: /mnt/ssd_raid)
+├── ConfigMap:      local-path-ssd-config        (nodePathMap: /fast-storage)
 ├── ServiceAccount: local-path-hdd-service-account
 ├── Deployment:     local-path-hdd-provisioner  (--provisioner-name rancher.io/local-path-hdd)
-└── ConfigMap:      local-path-hdd-config        (nodePathMap: /mnt/hdd_storage)
+└── ConfigMap:      local-path-hdd-config        (nodePathMap: /cold-storage)
 ```
 
 ---
@@ -177,8 +177,8 @@ graph TD
 
     subgraph storage["💾 Storage Layer"]
         direction LR
-        SSD["⚡ SSD RAID0\n/mnt/ssd_raid\n444 GiB · XFS"]
-        HDD["🐢 HDD\n/mnt/hdd_storage\n1 TiB · XFS"]
+        SSD["⚡ SSD RAID0\n/fast-storage\n444 GiB · XFS"]
+        HDD["🐢 HDD\n/cold-storage\n1 TiB · XFS"]
     end
 
     subgraph provisioners["☸️ StorageClasses  (local-path-storage ns)"]
@@ -245,7 +245,7 @@ graph TD
         ES["ExternalSecret\npostgres-credentials\nwave 3"]
         CM["ConfigMap\npostgres-init\nwave 2"]
         PVC_PG["PersistentVolumeClaim\npostgres-data\nwave 2"]
-        SC_HDD_PG["StorageClass\nlocal-path-hdd\n→ /mnt/hdd_storage"]
+        SC_HDD_PG["StorageClass\nlocal-path-hdd\n→ /cold-storage"]
         DEP["Deployment\npostgres\nwave 5"]
         POD["Pod\npostgres:18-alpine\nfsGroup: 70"]
         SVC["Service\npostgres:5432\nwave 4"]
