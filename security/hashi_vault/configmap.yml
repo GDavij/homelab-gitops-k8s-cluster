@@ -1,0 +1,40 @@
+---
+# vault.hcl — Raft storage with Transit auto-unseal.
+# Transit seal points to the vault-transit sidecar service in the same namespace.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-config
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/instance: vault
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  vault.hcl: |
+    ui = true
+    disable_mlock = true
+
+    listener "tcp" {
+      address     = "0.0.0.0:8200"
+      tls_disable = true
+    }
+
+    storage "raft" {
+      path    = "/vault/data"
+      node_id = "vault-0"
+    }
+
+    seal "transit" {
+      address         = "http://vault-transit.security.svc.k8s.monster.lab:8200"
+      disable_renewal = "false"
+      key_name        = "autounseal"
+      mount_path      = "transit/"
+      tls_skip_verify = "true"
+    }
+
+    api_addr     = "http://vault.security.svc.k8s.monster.lab:8200"
+    cluster_addr = "http://vault.security.svc.k8s.monster.lab:8201"

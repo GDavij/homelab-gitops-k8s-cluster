@@ -4,13 +4,13 @@
 ## Tier 2 (HDD): Single HDD over XFS 1TiB @ /mnt/hdd_storage → local-path-hdd
 ## =============================================================================
 
-# ─────────────────────────────────────────────────────────────────────────────
-# NAMESPACE (shared by both provisioners)
-# ─────────────────────────────────────────────────────────────────────────────
+# ─── Namespace ────────────────────────────────────────────────────────────────
 apiVersion: v1
 kind: Namespace
 metadata:
   name: local-path-storage
+  labels:
+    app.kubernetes.io/managed-by: argocd
 
 ---
 # =============================================================================
@@ -23,6 +23,13 @@ kind: ServiceAccount
 metadata:
   name: local-path-ssd-service-account
   namespace: local-path-storage
+  labels:
+    app.kubernetes.io/name: local-path-ssd
+    app.kubernetes.io/instance: local-path-ssd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 
 ---
 # ─── Role (namespace-scoped) ──────────────────────────────────────────────────
@@ -31,6 +38,13 @@ kind: Role
 metadata:
   name: local-path-ssd-role
   namespace: local-path-storage
+  labels:
+    app.kubernetes.io/name: local-path-ssd
+    app.kubernetes.io/instance: local-path-ssd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -42,6 +56,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: local-path-ssd-role
+  labels:
+    app.kubernetes.io/name: local-path-ssd
+    app.kubernetes.io/instance: local-path-ssd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 rules:
   - apiGroups: [""]
     resources:
@@ -64,6 +85,13 @@ kind: RoleBinding
 metadata:
   name: local-path-ssd-bind
   namespace: local-path-storage
+  labels:
+    app.kubernetes.io/name: local-path-ssd
+    app.kubernetes.io/instance: local-path-ssd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -79,6 +107,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: local-path-ssd-bind
+  labels:
+    app.kubernetes.io/name: local-path-ssd
+    app.kubernetes.io/instance: local-path-ssd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -90,11 +125,18 @@ subjects:
 
 ---
 # ─── ConfigMap ────────────────────────────────────────────────────────────────
-kind: ConfigMap
 apiVersion: v1
+kind: ConfigMap
 metadata:
   name: local-path-ssd-config
   namespace: local-path-storage
+  labels:
+    app.kubernetes.io/name: local-path-ssd
+    app.kubernetes.io/instance: local-path-ssd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 data:
   config.json: |-
     {
@@ -137,18 +179,25 @@ metadata:
   name: local-path-ssd-provisioner
   namespace: local-path-storage
   labels:
-    app: local-path-ssd-provisioner
-    tier: ssd
+    app.kubernetes.io/name: local-path-ssd
+    app.kubernetes.io/instance: local-path-ssd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: local-path-ssd-provisioner
+      app.kubernetes.io/name: local-path-ssd
+      app.kubernetes.io/instance: local-path-ssd
   template:
     metadata:
       labels:
-        app: local-path-ssd-provisioner
-        tier: ssd
+        app.kubernetes.io/name: local-path-ssd
+        app.kubernetes.io/instance: local-path-ssd
+        app.kubernetes.io/part-of: storage
+        app.kubernetes.io/managed-by: argocd
     spec:
       serviceAccountName: local-path-ssd-service-account
       containers:
@@ -184,8 +233,14 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: local-path-ssd
+  labels:
+    app.kubernetes.io/name: local-path-ssd
+    app.kubernetes.io/instance: local-path-ssd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
+    argocd.argoproj.io/sync-wave: "2"
 provisioner: rancher.io/local-path-ssd
 volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Delete
@@ -201,6 +256,13 @@ kind: ServiceAccount
 metadata:
   name: local-path-hdd-service-account
   namespace: local-path-storage
+  labels:
+    app.kubernetes.io/name: local-path-hdd
+    app.kubernetes.io/instance: local-path-hdd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 
 ---
 # ─── Role (namespace-scoped) ──────────────────────────────────────────────────
@@ -209,6 +271,13 @@ kind: Role
 metadata:
   name: local-path-hdd-role
   namespace: local-path-storage
+  labels:
+    app.kubernetes.io/name: local-path-hdd
+    app.kubernetes.io/instance: local-path-hdd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -220,6 +289,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: local-path-hdd-role
+  labels:
+    app.kubernetes.io/name: local-path-hdd
+    app.kubernetes.io/instance: local-path-hdd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 rules:
   - apiGroups: [""]
     resources:
@@ -242,6 +318,13 @@ kind: RoleBinding
 metadata:
   name: local-path-hdd-bind
   namespace: local-path-storage
+  labels:
+    app.kubernetes.io/name: local-path-hdd
+    app.kubernetes.io/instance: local-path-hdd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -257,6 +340,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: local-path-hdd-bind
+  labels:
+    app.kubernetes.io/name: local-path-hdd
+    app.kubernetes.io/instance: local-path-hdd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -268,11 +358,18 @@ subjects:
 
 ---
 # ─── ConfigMap ────────────────────────────────────────────────────────────────
-kind: ConfigMap
 apiVersion: v1
+kind: ConfigMap
 metadata:
   name: local-path-hdd-config
   namespace: local-path-storage
+  labels:
+    app.kubernetes.io/name: local-path-hdd
+    app.kubernetes.io/instance: local-path-hdd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 data:
   config.json: |-
     {
@@ -315,18 +412,25 @@ metadata:
   name: local-path-hdd-provisioner
   namespace: local-path-storage
   labels:
-    app: local-path-hdd-provisioner
-    tier: hdd
+    app.kubernetes.io/name: local-path-hdd
+    app.kubernetes.io/instance: local-path-hdd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: local-path-hdd-provisioner
+      app.kubernetes.io/name: local-path-hdd
+      app.kubernetes.io/instance: local-path-hdd
   template:
     metadata:
       labels:
-        app: local-path-hdd-provisioner
-        tier: hdd
+        app.kubernetes.io/name: local-path-hdd
+        app.kubernetes.io/instance: local-path-hdd
+        app.kubernetes.io/part-of: storage
+        app.kubernetes.io/managed-by: argocd
     spec:
       serviceAccountName: local-path-hdd-service-account
       containers:
@@ -362,6 +466,13 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: local-path-hdd
+  labels:
+    app.kubernetes.io/name: local-path-hdd
+    app.kubernetes.io/instance: local-path-hdd
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 provisioner: rancher.io/local-path-hdd
 volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Delete

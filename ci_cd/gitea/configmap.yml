@@ -4,6 +4,11 @@ kind: ConfigMap
 metadata:
   name: gitea-config
   namespace: ci-cd
+  labels:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 data:

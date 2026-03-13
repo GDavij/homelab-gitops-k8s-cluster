@@ -1,0 +1,121 @@
+---
+# vault-transit Deployment — Transit seal backend for the main Vault.
+# Contains a main vault process + auto-unseal sidecar.
+# Uses emptyDir (no PVC needed — state is reconstructed from vault-transit-unseal-key Secret).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-transit
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault-transit
+    app.kubernetes.io/instance: vault-transit
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vault-transit
+      app.kubernetes.io/instance: vault-transit
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vault-transit
+        app.kubernetes.io/instance: vault-transit
+        app.kubernetes.io/part-of: security
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      serviceAccountName: vault
+      securityContext:
+        runAsUser: 100
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        # ── Transit Vault server ──────────────────────────────────────────────
+        - name: vault
+          image: hashicorp/vault:1.19
+          command: ["vault", "server", "-config=/vault/config/vault.hcl"]
+          ports:
+            - name: http
+              containerPort: 8200
+              protocol: TCP
+          env:
+            - name: VAULT_ADDR
+              value: "http://127.0.0.1:8200"
+            - name: VAULT_API_ADDR
+              value: "http://vault-transit.security.svc.k8s.monster.lab:8200"
+            - name: SKIP_CHOWN
+              value: "true"
+          volumeMounts:
+            - name: data
+              mountPath: /vault/data
+            - name: config
+              mountPath: /vault/config
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            capabilities:
+              add: ["IPC_LOCK"]
+          readinessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
+              port: 8200
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
+              port: 8200
+            initialDelaySeconds: 30
+            periodSeconds: 15
+
+        # ── Auto-unseal sidecar ───────────────────────────────────────────────
+        # Polls every 5s and unseals vault-transit if sealed + initialized.
+        # Key is written to Secret `vault-transit-unseal-key` by vault_bootstrap.playbook.yml.
+        - name: vault-unseal
+          image: curlimages/curl:8.11.1
+          env:
+            - name: VAULT_UNSEAL_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vault-transit-unseal-key
+                  key: vault_transit_unseal_key
+                  optional: true
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while true; do
+                status=$(curl -sf http://127.0.0.1:8200/v1/sys/seal-status 2>/dev/null) || { sleep 5; continue; }
+                if echo "$status" | grep -q '"sealed":true' && echo "$status" | grep -q '"initialized":true'; then
+                  echo "$(date) vault-transit sealed — unsealing..."
+                  curl -sf --request POST \
+                    --data "{\"key\": \"${VAULT_UNSEAL_KEY}\"}" \
+                    http://127.0.0.1:8200/v1/sys/unseal
+                fi
+                sleep 5
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: vault-transit-config

@@ -1,0 +1,72 @@
+---
+# =============================================================================
+# EXTERNAL SECRETS OPERATOR (ESO)
+# Deployed via ArgoCD Application pointing to the official Helm chart.
+# ESO provides ExternalSecret + ClusterSecretStore CRDs that allow other apps
+# to sync secrets from HashiCorp Vault into K8s Secrets.
+#
+# SYNC ORDER:
+#   Wave 2: This Application (deploys ESO + CRDs)
+#   Wave 3: ClusterSecretStore (in hashi_vault/cluster-secret-store.yml)
+#   Wave 4: ExternalSecret resources across all apps
+#
+# ArgoCD applies this Application in the argocd namespace, but ESO itself
+# deploys to the external-secrets namespace (destination below).
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets-operator
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: external-secrets-operator
+    app.kubernetes.io/instance: external-secrets-operator
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: homelab
+  source:
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    targetRevision: "0.12.1"
+    helm:
+      valuesObject:
+        # ESO installs its own CRDs via the chart
+        installCRDs: true
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        webhook:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+        certController:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-secrets
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,21 @@
+---
+# Raft storage backend — HDD tier (sequential write patterns, no random I/O spikes).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vault-data
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/instance: vault
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path-hdd
+  resources:
+    requests:
+      storage: 5Gi

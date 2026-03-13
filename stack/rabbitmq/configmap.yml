@@ -4,6 +4,11 @@ kind: ConfigMap
 metadata:
   name: rabbitmq-config
   namespace: stack
+  labels:
+    app.kubernetes.io/name: rabbitmq
+    app.kubernetes.io/instance: rabbitmq
+    app.kubernetes.io/part-of: stack
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 data:

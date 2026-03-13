@@ -4,6 +4,11 @@ kind: ConfigMap
 metadata:
   name: devenv-service-endpoints
   namespace: dev-env
+  labels:
+    app.kubernetes.io/name: devenv
+    app.kubernetes.io/instance: devenv
+    app.kubernetes.io/part-of: dev-env
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 data:

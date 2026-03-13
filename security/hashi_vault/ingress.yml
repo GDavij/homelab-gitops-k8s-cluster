@@ -1,0 +1,30 @@
+---
+# ─── Vault UI IngressRoute ─────────────────────────────────────────────────────
+# Protected by global mTLS — only clients with a valid cert from monster-ca-trust
+# can reach the Vault UI. Vault itself runs plain HTTP internally.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: vault
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/instance: vault
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`vault.svc.k8s.monster.lab`)
+      kind: Rule
+      services:
+        - name: vault
+          port: 8200
+  tls:
+    secretName: monster-server-cert
+    options:
+      name: mtls-strict
+      namespace: traefik

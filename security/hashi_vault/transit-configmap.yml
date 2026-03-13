@@ -1,0 +1,29 @@
+---
+# vault-transit ConfigMap — uses file storage (ephemeral is fine, state comes from unseal key)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-transit-config
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault-transit
+    app.kubernetes.io/instance: vault-transit
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  vault.hcl: |
+    ui = false
+    disable_mlock = true
+
+    listener "tcp" {
+      address     = "0.0.0.0:8200"
+      tls_disable = true
+    }
+
+    storage "file" {
+      path = "/vault/data"
+    }
+
+    api_addr = "http://vault-transit.security.svc.k8s.monster.lab:8200"

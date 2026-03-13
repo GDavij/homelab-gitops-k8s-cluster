@@ -1,0 +1,25 @@
+---
+# NodePort 30443 → host port 443. No LoadBalancer needed on bare-metal.
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/part-of: traefik
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+  ports:
+    - name: websecure
+      protocol: TCP
+      port: 443
+      targetPort: 443
+      nodePort: 30443
