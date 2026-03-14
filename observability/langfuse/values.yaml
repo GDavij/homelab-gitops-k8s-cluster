@@ -1,108 +1,108 @@
 langfuse:
-  salt:
-    secretKeyRef:
-      name: langfuse-secrets
-      key: SALT
-  nextauth:
-    url: "https://langfuse.svc.k8s.monster.lab"
-    secret:
+  langfuse:
+    salt:
       secretKeyRef:
         name: langfuse-secrets
-        key: NEXTAUTH_SECRET
-  encryptionKey:
-    secretKeyRef:
-      name: langfuse-secrets
-      key: ENCRYPTION_KEY
-  features:
-    telemetryEnabled: false
-  additionalEnv:
-    - name: DATABASE_URL
-      valueFrom:
+        key: SALT
+    nextauth:
+      url: "https://langfuse.svc.k8s.monster.lab"
+      secret:
         secretKeyRef:
           name: langfuse-secrets
-          key: LANGFUSE_DB_URL
-  web:
-    replicas: 1
-    deployment:
-      strategy:
-        type: Recreate
-    pod:
-      additionalEnv:
-        - name: NODE_OPTIONS
-          value: "--max-old-space-size=768"
-  # Desativado pois usamos o IngressRoute manual na pasta templates
-  ingress:
-    enabled: false
-  resources:
-    requests:
-      cpu: 50m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 1Gi
+          key: NEXTAUTH_SECRET
+    encryptionKey:
+      secretKeyRef:
+        name: langfuse-secrets
+        key: ENCRYPTION_KEY
+    features:
+      telemetryEnabled: false
+    additionalEnv:
+      - name: DATABASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: langfuse-secrets
+            key: LANGFUSE_DB_URL
+    web:
+      replicas: 1
+      deployment:
+        strategy:
+          type: Recreate
+      pod:
+        additionalEnv:
+          - name: NODE_OPTIONS
+            value: "--max-old-space-size=768"
 
-# Configuração de Infra (Banco de Dados, Redis, S3)
-postgresql:
-  deploy: false
-  host: "postgres.database.svc"
-  auth:
-    username: langfuse
-    password: "placeholder"
-
-clickhouse:
-  clusterDomain: "k8s.monster.lab"
-  shards: 1
-  replicaCount: 1
-  auth:
-    password: "clickhouse-langfuse-pass"
-  configdFiles:
-    01_cluster.xml: |
-      <clickhouse>
-        <remote_servers>
-          <default>
-            <shard>
-              <replica>
-                <host>langfuse-clickhouse-shard0-0.langfuse-clickhouse-headless.observability.svc.k8s.monster.lab</host>
-                <port>9000</port>
-              </replica>
-            </shard>
-          </default>
-        </remote_servers>
-      </clickhouse>
-  persistence:
-    storageClass: "local-path-hdd"
-    size: 10Gi
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 1Gi
-
-zookeeper:
-  enabled: true
-  clusterDomain: "k8s.monster.lab"
-  replicaCount: 1
-
-redis:
-  deploy: false
-  host: "redis-stack.stack.svc"
-  port: 6379
-  auth:
-    password: ""
-
-s3:
-  deploy: false
-  bucket: "langfuse"
-  region: "us-east-1"
-  endpoint: "http://minio.storage.svc:9000"
-  forcePathStyle: true
-  accessKeyId:
-    secretKeyRef:
-      name: langfuse-secrets
-      key: MINIO_ROOT_USER
-  secretAccessKey:
-    secretKeyRef:
-      name: langfuse-secrets
-      key: MINIO_ROOT_PASSWORD
+    ingress:
+      enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+  
+  postgresql:
+    deploy: false
+    host: "postgres.database.svc"
+    auth:
+      username: langfuse
+      password: "placeholder"
+  
+  clickhouse:
+    clusterDomain: "k8s.monster.lab"
+    shards: 1
+    replicaCount: 1
+    auth:
+      password: "clickhouse-langfuse-pass"
+    configdFiles:
+      01_cluster.xml: |
+        <clickhouse>
+          <remote_servers>
+            <default>
+              <shard>
+                <replica>
+                  <host>langfuse-clickhouse-shard0-0.langfuse-clickhouse-headless.observability.svc.k8s.monster.lab</host>
+                  <port>9000</port>
+                </replica>
+              </shard>
+            </default>
+          </remote_servers>
+        </clickhouse>
+    persistence:
+      storageClass: "local-path-hdd"
+      size: 10Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+  
+  zookeeper:
+    enabled: true
+    clusterDomain: "k8s.monster.lab"
+    replicaCount: 1
+  
+  redis:
+    deploy: false
+    host: "redis-stack.stack.svc"
+    port: 6379
+    auth:
+      password: ""
+  
+  s3:
+    deploy: false
+    bucket: "langfuse"
+    region: "us-east-1"
+    endpoint: "http://minio.storage.svc:9000"
+    forcePathStyle: true
+    accessKeyId:
+      secretKeyRef:
+        name: langfuse-secrets
+        key: MINIO_ROOT_USER
+    secretAccessKey:
+      secretKeyRef:
+        name: langfuse-secrets
+        key: MINIO_ROOT_PASSWORD
