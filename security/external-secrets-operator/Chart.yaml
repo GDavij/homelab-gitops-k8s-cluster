@@ -1,0 +1,9 @@
+apiVersion: v2
+name: external-secrets-homelab
+type: application
+version: 1.0.0
+appVersion: "0.12.1"
+dependencies:
+  - name: external-secrets
+    version: "0.12.1"
+    repository: "https://charts.external-secrets.io"
