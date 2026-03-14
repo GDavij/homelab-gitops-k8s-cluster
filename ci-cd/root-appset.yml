@@ -13,7 +13,7 @@ spec:
         revision: main
         directories:
           - path: "*/*"
-          - path: "ci_cd/argocd"
+          - path: "ci-cd/argocd"
             exclude: true
   template:
     metadata:
