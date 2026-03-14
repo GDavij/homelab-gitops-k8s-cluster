@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://langfuse.github.io/langfuse-k8s
     chart: langfuse
-    targetRevision: "*"
+    targetRevision: "1.5.21"
     helm:
       valuesObject:
         langfuse:
