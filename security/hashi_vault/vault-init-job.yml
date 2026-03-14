@@ -48,10 +48,15 @@ spec:
       containers:
         - name: vault-init
           image: hashicorp/vault:1.19
+          securityContext:
+            runAsUser: 0
           command:
             - /bin/sh
             - -ec
             - |
+              # ─── install dependencies ─────────────────────────────────────
+              apk add --no-cache curl jq >/dev/null
+
               # ─── helpers ──────────────────────────────────────────────────
               TRANSIT="http://vault-transit.security.svc:8200"
               MAIN="http://vault.security.svc:8200"
@@ -104,46 +109,47 @@ spec:
               # ─── PHASE 1: vault-transit ────────────────────────────────────
               echo ">>> Phase 1: vault-transit"
 
+              export VAULT_SKIP_VERIFY="true"
+              export VAULT_ADDR="$TRANSIT"
+
               echo "Waiting for vault-transit..."
-              until curl -sf "$TRANSIT/v1/sys/health" >/dev/null 2>&1; do
+              until vault status > /tmp/vstatus 2>&1 || [ $? -eq 2 ]; do
+                echo "  ...waiting for vault-transit to respond"
                 sleep 3
               done
               echo "vault-transit reachable."
 
-              TSTATUS=$(curl -sf "$TRANSIT/v1/sys/seal-status")
-              T_INIT=$(echo "$TSTATUS" | grep -o '"initialized":[a-z]*' | cut -d: -f2)
+              vault status -format=json > /tmp/vstatus.json 2>/dev/null || [ $? -eq 2 ]
+              V_STATUS=$(cat /tmp/vstatus.json)
+              T_INIT=$(echo "$V_STATUS" | jq -r '.initialized')
 
               if [ "$T_INIT" = "false" ]; then
                 echo "Initializing vault-transit..."
-                TINIT=$(curl -sf -X POST "$TRANSIT/v1/sys/init" \
-                  -d '{"secret_shares":1,"secret_threshold":1}')
-                T_UNSEAL=$(echo "$TINIT" | grep -o '"unseal_keys_b64":\["[^"]*"' | grep -o '[^"]*"$' | tr -d '"')
-                T_ROOT=$(echo "$TINIT" | grep -o '"root_token":"[^"]*"' | cut -d'"' -f4)
+                TINIT=$(vault operator init -key-shares=1 -key-threshold=1 -format=json)
+                T_UNSEAL=$(echo "$TINIT" | jq -r '.unseal_keys_b64[0]')
+                T_ROOT=$(echo "$TINIT" | jq -r '.root_token')
 
                 k8s_secret_put security vault-transit-unseal-key vault_transit_unseal_key "$T_UNSEAL"
                 k8s_secret_put security vault-transit-root-token token "$T_ROOT"
                 echo "vault-transit initialized. Unseal key stored."
               else
-                echo "vault-transit already initialized."
-                # Read existing root token for transit engine config
+                echo "vault-transit already initialized (T_INIT=$T_INIT)."
                 K8S_TOKEN=$(cat "$TOKEN_FILE")
                 T_ROOT=$(curl -sf \
                   "$K8S/api/v1/namespaces/security/secrets/vault-transit-root-token" \
                   -H "Authorization: Bearer $K8S_TOKEN" \
-                  --cacert "$CA_FILE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4 | base64 -d)
+                  --cacert "$CA_FILE" | jq -r '.data.token' | base64 -d)
               fi
 
-              # Unseal vault-transit (idempotent — no-op if already unsealed)
+              # Unseal vault-transit
               T_UNSEAL_KEY=$(curl -sf \
                 "$K8S/api/v1/namespaces/security/secrets/vault-transit-unseal-key" \
                 -H "Authorization: Bearer $(cat $TOKEN_FILE)" \
-                --cacert "$CA_FILE" | grep -o '"vault_transit_unseal_key":"[^"]*"' | cut -d'"' -f4 | base64 -d)
+                --cacert "$CA_FILE" | jq -r '.data.vault_transit_unseal_key' | base64 -d)
 
-              SEALED=$(curl -sf "$TRANSIT/v1/sys/seal-status" | grep -o '"sealed":[a-z]*' | cut -d: -f2)
-              if [ "$SEALED" = "true" ]; then
+              if vault status -format=json | jq -e '.sealed == true' >/dev/null; then
                 echo "Unsealing vault-transit..."
-                curl -sf -X POST "$TRANSIT/v1/sys/unseal" \
-                  -d "{\"key\":\"$T_UNSEAL_KEY\"}" >/dev/null
+                vault operator unseal "$T_UNSEAL_KEY" >/dev/null
               fi
 
               # Configure transit engine (idempotent)
@@ -166,29 +172,31 @@ spec:
               echo ""
               echo ">>> Phase 2: vault main"
 
+              export VAULT_ADDR="$MAIN"
               echo "Waiting for vault main (may wait for transit token to take effect)..."
-              until curl -sf "$MAIN/v1/sys/health" >/dev/null 2>&1; do
+              until vault status > /tmp/vstatus 2>&1 || [ $? -eq 2 ]; do
+                echo "  ...waiting for vault main to respond"
                 sleep 5
               done
               echo "vault main reachable."
 
-              MSTATUS=$(curl -sf "$MAIN/v1/sys/seal-status")
-              M_INIT=$(echo "$MSTATUS" | grep -o '"initialized":[a-z]*' | cut -d: -f2)
+              vault status -format=json > /tmp/vstatus.json 2>/dev/null || [ $? -eq 2 ]
+              V_STATUS=$(cat /tmp/vstatus.json)
+              M_INIT=$(echo "$V_STATUS" | jq -r '.initialized')
 
               if [ "$M_INIT" = "false" ]; then
                 echo "Initializing vault main..."
-                MINIT=$(curl -sf -X POST "$MAIN/v1/sys/init" \
-                  -d '{"secret_shares":1,"secret_threshold":1,"recovery_shares":1,"recovery_threshold":1}')
-                M_ROOT=$(echo "$MINIT" | grep -o '"root_token":"[^"]*"' | cut -d'"' -f4)
+                MINIT=$(vault operator init -recovery-shares=1 -recovery-threshold=1 -format=json)
+                M_ROOT=$(echo "$MINIT" | jq -r '.root_token')
                 k8s_secret_put security vault-root-token token "$M_ROOT"
                 echo "vault main initialized. Root token stored in secret/security/vault-root-token."
               else
-                echo "vault main already initialized."
+                echo "vault main already initialized (M_INIT=$M_INIT)."
                 K8S_TOKEN=$(cat "$TOKEN_FILE")
                 M_ROOT=$(curl -sf \
                   "$K8S/api/v1/namespaces/security/secrets/vault-root-token" \
                   -H "Authorization: Bearer $K8S_TOKEN" \
-                  --cacert "$CA_FILE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4 | base64 -d)
+                  --cacert "$CA_FILE" | jq -r '.data.token' | base64 -d)
               fi
 
               export VAULT_ADDR="$MAIN"

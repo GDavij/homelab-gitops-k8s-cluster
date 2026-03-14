@@ -16,6 +16,17 @@ metadata:
 
 ---
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: local-path-provisioner-service-account
+  namespace: local-path-storage
+  labels:
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: local-path-config
@@ -143,6 +154,9 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: local-path-ssd-service-account
+    namespace: local-path-storage
+  - kind: ServiceAccount
+    name: local-path-provisioner-service-account
     namespace: local-path-storage
 
 ---
@@ -393,6 +407,9 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: local-path-hdd-service-account
+    namespace: local-path-storage
+  - kind: ServiceAccount
+    name: local-path-provisioner-service-account
     namespace: local-path-storage
 
 ---
