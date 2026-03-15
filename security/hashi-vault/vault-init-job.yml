@@ -169,7 +169,7 @@ spec:
               # ── Langfuse ────────────────────────────────────────────────────
               vault_ensure_key secret/observability/langfuse NEXTAUTH_SECRET  "$(rand_b64 32)"
               vault_ensure_key secret/observability/langfuse SALT             "$(rand_hex 16)"
-              vault_ensure_key secret/observability/langfuse ENCRYPTION_KEY   "$(rand_hex 32)"
+              vault_ensure_key secret/observability/langfuse ENCRYPTION_KEY   "$(rand_hex 64)"
 
               # ── Drone CI ────────────────────────────────────────────────────
               vault_ensure_key secret/ci-cd/drone DRONE_RPC_SECRET           "$(rand_hex 32)"
