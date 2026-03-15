@@ -21,8 +21,8 @@ spec:
       services:
         - name: coder
           port: 3000
-  tls:
-    secretName: monster-server-cert
-    options:
-      name: mtls-strict
-      namespace: traefik
+  # tls:
+  #   secretName: monster-server-cert
+  #   options:
+  #     name: mtls-strict
+  #     namespace: traefik
