@@ -27,6 +27,20 @@ langfuse:
       deployment:
         strategy:
           type: Recreate
+      annotations:
+        argocd.argoproj.io/sync-wave: "8"
+      pod:
+        additionalEnv:
+          - name: NODE_OPTIONS
+            value: "--max-old-space-size=768"
+
+    worker:
+      replicas: 1
+      deployment: 
+        strategy:
+          type: Recreate
+      annotations:
+        argocd.argoproj.io/sync-wave: "8"
       pod:
         additionalEnv:
           - name: NODE_OPTIONS
