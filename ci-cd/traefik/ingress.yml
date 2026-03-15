@@ -25,7 +25,7 @@ metadata:
     app.kubernetes.io/part-of: traefik
     app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   minVersion: VersionTLS12
   cipherSuites:

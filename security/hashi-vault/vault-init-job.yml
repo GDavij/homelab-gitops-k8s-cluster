@@ -2,7 +2,7 @@
 # =============================================================================
 # VAULT INIT JOB — Fully automatic, idempotent bootstrap
 # =============================================================================
-# Runs at sync wave 3 (after vault-transit@1 and vault@2 are deployed).
+# Runs at sync wave 4 (after vault-transit@1, vault@2, and RBAC@3 are deployed).
 # Performs every step that was previously the manual vault_bootstrap.playbook.yml:
 #
 #   1. Wait for vault-transit to be reachable
@@ -30,7 +30,7 @@ metadata:
     app.kubernetes.io/part-of: security
     app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "4"
     # BeforeHookCreation: if the Job is re-created (e.g. after manual deletion),
     # it deletes the old one first so a fresh run can proceed cleanly.
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
