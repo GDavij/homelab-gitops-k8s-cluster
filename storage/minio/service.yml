@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/part-of: storage
     app.kubernetes.io/managed-by: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   selector:
     app.kubernetes.io/name: minio
