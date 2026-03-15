@@ -20,6 +20,8 @@ spec:
       name: "{{path.basename}}"
       labels:
         app.kubernetes.io/managed-by: argocd
+      annotations:
+        argocd.argoproj.io/sync-wave: "8"
     spec:
       project: homelab
       source:

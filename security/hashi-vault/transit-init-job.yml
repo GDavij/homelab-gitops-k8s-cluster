@@ -1,0 +1,154 @@
+---
+# =============================================================================
+# TRANSIT VAULT INIT JOB — Initialize and unseal Transit Vault first
+# =============================================================================
+# Runs at sync wave 1 (immediately after Transit Vault deployment starts)
+# This ensures Transit Vault is ready before Main Vault tries to auto-unseal.
+#
+# Performs:
+#   1. Wait for vault-transit to be reachable
+#   2. Initialize vault-transit (if not already) → saves unseal key to K8s Secret
+#   3. Unseal vault-transit
+#   4. Configure Transit engine + create autounseal token → saves to K8s Secret
+#
+# IDEMPOTENCY: every step checks the current state before acting.
+# =============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: transit-init
+  namespace: security
+  labels:
+    app.kubernetes.io/name: transit-init
+    app.kubernetes.io/instance: transit-init
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: transit-init
+        app.kubernetes.io/part-of: security
+    spec:
+      serviceAccountName: vault-init
+      restartPolicy: OnFailure
+      containers:
+        - name: transit-init
+          image: hashicorp/vault:1.19
+          securityContext:
+            runAsUser: 0
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              # ─── install dependencies ─────────────────────────────────────
+              apk add --no-cache curl jq >/dev/null
+
+              # ─── helpers ──────────────────────────────────────────────────
+              TRANSIT="http://vault-transit.security.svc:8200"
+              K8S="https://kubernetes.default.svc"
+              TOKEN_FILE="/var/run/secrets/kubernetes.io/serviceaccount/token"
+              CA_FILE="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
+              k8s_secret_put() {
+                NS=$1; NAME=$2; KEY=$3; VALUE=$4
+                B64=$(echo -n "$VALUE" | base64 | tr -d '\n')
+                K8S_TOKEN=$(cat "$TOKEN_FILE")
+                curl -sf -X POST \
+                  "$K8S/api/v1/namespaces/$NS/secrets" \
+                  -H "Authorization: Bearer $K8S_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  --cacert "$CA_FILE" \
+                  -d "{\"apiVersion\":\"v1\",\"kind\":\"Secret\",\"metadata\":{\"name\":\"$NAME\",\"namespace\":\"$NS\"},\"data\":{\"$KEY\":\"$B64\"}}" \
+                  >/dev/null 2>&1 || \
+                curl -sf -X PATCH \
+                  "$K8S/api/v1/namespaces/$NS/secrets/$NAME" \
+                  -H "Authorization: Bearer $K8S_TOKEN" \
+                  -H "Content-Type: application/strategic-merge-patch+json" \
+                  --cacert "$CA_FILE" \
+                  -d "{\"data\":{\"$KEY\":\"$B64\"}}" \
+                  >/dev/null
+              }
+
+              rand_hex() { cat /dev/urandom | tr -dc 'a-f0-9' | head -c "$1"; }
+
+              # ─── PHASE 1: Initialize vault-transit ───────────────────────────
+              echo ">>> Initializing vault-transit"
+
+              export VAULT_SKIP_VERIFY="true"
+              export VAULT_ADDR="$TRANSIT"
+
+              echo "Waiting for vault-transit..."
+              until vault status > /tmp/vstatus 2>&1 || [ $? -eq 2 ]; do
+                echo "  ...waiting for vault-transit to respond"
+                sleep 3
+              done
+              echo "vault-transit reachable."
+
+              vault status -format=json > /tmp/vstatus.json 2>/dev/null || [ $? -eq 2 ]
+              V_STATUS=$(cat /tmp/vstatus.json)
+              T_INIT=$(echo "$V_STATUS" | jq -r '.initialized')
+
+              if [ "$T_INIT" = "false" ]; then
+                echo "Initializing vault-transit..."
+                TINIT=$(vault operator init -key-shares=1 -key-threshold=1 -format=json)
+                T_UNSEAL=$(echo "$TINIT" | jq -r '.unseal_keys_b64[0]')
+                T_ROOT=$(echo "$TINIT" | jq -r '.root_token')
+
+                k8s_secret_put security vault-transit-unseal-key vault_transit_unseal_key "$T_UNSEAL"
+                k8s_secret_put security vault-transit-root-token token "$T_ROOT"
+                echo "vault-transit initialized. Unseal key stored."
+              else
+                echo "vault-transit already initialized."
+                K8S_TOKEN=$(cat "$TOKEN_FILE")
+                T_ROOT=$(curl -sf \
+                  "$K8S/api/v1/namespaces/security/secrets/vault-transit-root-token" \
+                  -H "Authorization: Bearer $K8S_TOKEN" \
+                  --cacert "$CA_FILE" | jq -r '.data.token' | base64 -d)
+              fi
+
+              # ─── PHASE 2: Unseal vault-transit ──────────────────────────────
+              T_UNSEAL_KEY=$(curl -sf \
+                "$K8S/api/v1/namespaces/security/secrets/vault-transit-unseal-key" \
+                -H "Authorization: Bearer $(cat $TOKEN_FILE)" \
+                --cacert "$CA_FILE" | jq -r '.data.vault_transit_unseal_key' | base64 -d)
+
+              if vault status -format=json | jq -e '.sealed == true' >/dev/null; then
+                echo "Unsealing vault-transit..."
+                vault operator unseal "$T_UNSEAL_KEY" >/dev/null
+              fi
+              echo "vault-transit unsealed."
+
+              # ─── PHASE 3: Configure Transit engine ──────────────────────────
+              export VAULT_ADDR="$TRANSIT"
+              vault login -no-print "$T_ROOT"
+              vault secrets enable transit >/dev/null 2>&1 || echo "  [skip] transit already enabled"
+              vault write -f transit/keys/autounseal >/dev/null 2>&1 || echo "  [skip] autounseal key exists"
+
+              # Create autounseal token for Main Vault
+              printf 'path "transit/encrypt/autounseal" { capabilities = ["update"] }\npath "transit/decrypt/autounseal" { capabilities = ["update"] }\n' \
+                > /tmp/transit-policy.hcl
+              vault policy write autounseal /tmp/transit-policy.hcl >/dev/null
+              T_TOKEN=$(vault token create -orphan -policy=autounseal \
+                -wrap-ttl=0 -period=768h -format=json | \
+                grep '"client_token"' | cut -d'"' -f4)
+              k8s_secret_put security vault-transit-token vault_transit_token "$T_TOKEN"
+              echo "vault-transit autounseal token stored."
+
+              echo ""
+              echo "=== transit-init complete. Transit Vault ready for auto-unseal. ==="
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          env:
+            - name: VAULT_SKIP_VERIFY
+              value: "true"
