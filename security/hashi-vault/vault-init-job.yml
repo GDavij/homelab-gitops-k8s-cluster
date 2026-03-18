@@ -157,10 +157,10 @@ spec:
               LANGFUSE_PW=$(vault kv get -field=LANGFUSE_DB_PASSWORD secret/database/postgres)
               DRONE_PW=$(vault kv get   -field=DRONE_DB_PASSWORD    secret/database/postgres)
 
-              vault_ensure_key secret/database/postgres CODER_DB_URL    "postgres://coder:${CODER_PW}@postgres.database.svc:5432/coder?sslmode=disable"
-              vault_ensure_key secret/database/postgres MLFLOW_DB_URL   "postgres://mlflow:${MLFLOW_PW}@postgres.database.svc:5432/mlflow?sslmode=disable"
-              vault_ensure_key secret/database/postgres LANGFUSE_DB_URL "postgres://langfuse:${LANGFUSE_PW}@postgres.database.svc:5432/langfuse?sslmode=disable"
-              vault_ensure_key secret/database/postgres DRONE_DB_URL    "postgres://drone:${DRONE_PW}@postgres.database.svc:5432/drone?sslmode=disable"
+              vault_ensure_key secret/database/postgres CODER_DB_URL    "postgres://coder:${CODER_PW}@postgres.database:5432/coder?sslmode=disable"
+              vault_ensure_key secret/database/postgres MLFLOW_DB_URL   "postgres://mlflow:${MLFLOW_PW}@postgres.database:5432/mlflow?sslmode=disable"
+              vault_ensure_key secret/database/postgres LANGFUSE_DB_URL "postgres://langfuse:${LANGFUSE_PW}@postgres.database:5432/langfuse?sslmode=disable"
+              vault_ensure_key secret/database/postgres DRONE_DB_URL    "postgres://drone:${DRONE_PW}@postgres.database:5432/drone?sslmode=disable"
 
               # ── MinIO ───────────────────────────────────────────────────────
               vault_ensure_key secret/storage/minio MINIO_ROOT_USER     "admin"
@@ -183,7 +183,7 @@ spec:
               # ── Coder ───────────────────────────────────────────────────────
               CODER_PW=$(vault kv get -field=CODER_DB_PASSWORD secret/database/postgres)
               vault_ensure_key secret/ci-cd/coder CODER_PG_CONNECTION_URL \
-                "postgres://coder:${CODER_PW}@postgres.database.svc:5432/coder?sslmode=disable"
+                "postgres://coder:${CODER_PW}@postgres.database:5432/coder?sslmode=disable"
 
               echo "KV secrets seeded."
 
