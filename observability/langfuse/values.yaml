@@ -94,7 +94,7 @@ langfuse:
         memory: 256Mi
       limits:
         cpu: 500m
-        memory: 3Gi
+        memory: 6Gi
 
   redis:
     deploy: false
