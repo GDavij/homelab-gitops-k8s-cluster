@@ -93,11 +93,11 @@ langfuse:
       limits:
         cpu: 500m
         memory: 6Gi
-  
-  zookeeper:
-    enabled: true
-    clusterDomain: "k8s.monster.lab"
-  
+    zookeeper:
+      enabled: true
+      replicaCount: 1
+      clusterDomain: "k8s.monster.lab"
+
   redis:
     deploy: false
     host: "redis-stack.stack.svc"
