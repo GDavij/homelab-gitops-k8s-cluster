@@ -4,13 +4,18 @@ kind: IngressRoute
 metadata:
   name: langfuse
   namespace: observability
+  labels:
+    app.kubernetes.io/name: langfuse
+    app.kubernetes.io/instance: langfuse
+    app.kubernetes.io/part-of: observability
+    app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "4"
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`langfuse.svc.k8s.monster.lab`)
+    - match: Host(`langfuse.lab`)
       kind: Rule
       services:
         - name: langfuse-web
@@ -19,4 +24,4 @@ spec:
     secretName: monster-server-cert
     options:
       name: mtls-strict
-      namespace: observability
+      namespace: traefik
