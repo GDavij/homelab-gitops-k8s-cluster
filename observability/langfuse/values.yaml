@@ -33,7 +33,6 @@ langfuse:
         additionalEnv:
           - name: NODE_OPTIONS
             value: "--max-old-space-size=768"
-
     worker:
       replicas: 1
       deployment: 
@@ -45,7 +44,6 @@ langfuse:
         additionalEnv:
           - name: NODE_OPTIONS
             value: "--max-old-space-size=768"
-
     ingress:
       enabled: false
     resources:
@@ -69,6 +67,10 @@ langfuse:
     replicaCount: 1
     auth:
       password: "clickhouse-langfuse-pass"
+    zookeeper:
+      enabled: true
+      replicaCount: 1
+      clusterDomain: "k8s.monster.lab"
     configdFiles:
       01_cluster.xml: |
         <clickhouse>
@@ -93,10 +95,6 @@ langfuse:
       limits:
         cpu: 500m
         memory: 6Gi
-    zookeeper:
-      enabled: true
-      replicaCount: 1
-      clusterDomain: "k8s.monster.lab"
 
   redis:
     deploy: false
