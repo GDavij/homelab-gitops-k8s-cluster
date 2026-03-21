@@ -37,12 +37,19 @@ data:
           cert_file: /certs/tls.crt
           key_file: /certs/tls.key
           ca_file: /certs/ca.crt
+
       otlp/jaeger:
         endpoint: "https://ingestion.traces.lab:443"
         tls:
           cert_file: /certs/tls.crt
           key_file: /certs/tls.key
           ca_file: /certs/ca.crt
+
+      otlphttp/langfuse:
+        endpoint: "http://langfuse-web.observability.svc.k8s.monster.lab:3000/api/public/otel"
+        headers:
+          Authorization: "Basic ${env:LANGFUSE_AUTH_BASE64}"
+
       debug:
         verbosity: basic
 
@@ -56,7 +63,7 @@ data:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [otlp/jaeger]
+          exporters: [otlp/jaeger, otlphttp/langfuse]
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]

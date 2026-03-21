@@ -33,6 +33,12 @@ spec:
             runAsUser: 10001
             readOnlyRootFilesystem: true
           args: ["--config=/etc/otel/config.yaml"]
+          env:
+            - name: LANGFUSE_AUTH_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-auth-secret
+                  key: auth-header
           ports:
             - name: otlp-grpc
               containerPort: 4317
