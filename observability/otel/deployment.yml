@@ -37,8 +37,8 @@ spec:
             - name: LANGFUSE_AUTH_BASE64
               valueFrom:
                 secretKeyRef:
-                  name: langfuse-auth-secret
-                  key: auth-header
+                  name: otel-secrets
+                  key: LANGFUSE_AUTH_BASE64
           ports:
             - name: otlp-grpc
               containerPort: 4317
