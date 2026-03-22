@@ -51,7 +51,7 @@ data:
           Authorization: "Basic ${env:LANGFUSE_AUTH_BASE64}"
 
       debug:
-        verbosity: basic
+        verbosity: detailed
 
     extensions:
       health_check:
