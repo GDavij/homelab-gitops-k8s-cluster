@@ -63,11 +63,11 @@ data:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [otlp/jaeger, otlphttp/langfuse]
+          exporters: [otlp/jaeger, otlphttp/langfuse, debug]
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [prometheusremotewrite]
+          exporters: [prometheusremotewrite, debug]
         logs:
           receivers: [otlp]
           processors: [memory_limiter, batch]
