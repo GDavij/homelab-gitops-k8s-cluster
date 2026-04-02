@@ -18,7 +18,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`vault.svc.k8s.monster.lab`)
+    - match: Host(`vault.lab`)
       kind: Rule
       services:
         - name: vault

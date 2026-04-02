@@ -16,7 +16,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`coder.svc.k8s.monster.lab`)
+    - match: Host(`coder.lab`)
       kind: Rule
       services:
         - name: coder

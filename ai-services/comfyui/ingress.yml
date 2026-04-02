@@ -16,7 +16,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`comfyui.svc.k8s.monster.lab`)
+    - match: Host(`diffusion.lab`)
       kind: Rule
       services:
         - name: comfyui

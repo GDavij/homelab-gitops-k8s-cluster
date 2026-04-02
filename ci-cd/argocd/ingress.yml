@@ -34,7 +34,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: HostSNI(`argocd.svc.k8s.monster.lab`)
+    - match: HostSNI(`argo.lab`)
       services:
         - name: argocd-server
           port: 443

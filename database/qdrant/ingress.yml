@@ -1,7 +1,4 @@
----
-# ─── Qdrant Vector DB UI & API ────────────────────────────────────────────────
-# TLSOption now references the global traefik namespace (consolidated).
-# Local mtls-strict TLSOption removed from database namespace.
+# ─── Qdrant Vector DB UI & API (Consolidated) ───────────────────────────────
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -18,11 +15,18 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`qdrant.svc.k8s.monster.lab`)
+    - match: Host(`vectors.lab`)
       kind: Rule
       services:
         - name: qdrant
           port: 6333
+          
+    - match: Host(`proto-vectors.lab`)
+      kind: Rule
+      services:
+        - name: qdrant
+          port: 6334
+          scheme: h2c
   tls:
     secretName: monster-server-cert
     options:

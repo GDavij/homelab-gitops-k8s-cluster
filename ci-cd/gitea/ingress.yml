@@ -16,7 +16,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`gitea.svc.k8s.monster.lab`)
+    - match: Host(`repos.lab`)
       kind: Rule
       services:
         - name: gitea

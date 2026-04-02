@@ -18,7 +18,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`rabbitmq.svc.k8s.monster.lab`)
+    - match: Host(`rabbit.lab`)
       kind: Rule
       services:
         - name: rabbitmq

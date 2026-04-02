@@ -16,7 +16,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`minio.svc.k8s.monster.lab`)
+    - match: Host(`s3-explorer.lab`)
       kind: Rule
       services:
         - name: minio
@@ -46,7 +46,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`s3.svc.k8s.monster.lab`)
+    - match: Host(`s3.lab`)
       kind: Rule
       services:
         - name: minio

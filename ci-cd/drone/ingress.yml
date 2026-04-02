@@ -16,7 +16,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`drone.svc.k8s.monster.lab`)
+    - match: Host(`drone.lab`)
       kind: Rule
       services:
         - name: drone
