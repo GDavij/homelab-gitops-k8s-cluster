@@ -36,7 +36,7 @@ spec:
           args:
             - -promscrape.config=/etc/vmagent/vmagent.yaml
             - -remoteWrite.url=http://otel-collector.observability.svc:8888/v1/write
-            - -logger.level=warn
+            - -loggerLevel=WARN
           ports:
             - name: http
               containerPort: 8429
