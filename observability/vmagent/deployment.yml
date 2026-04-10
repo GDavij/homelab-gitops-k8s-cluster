@@ -13,6 +13,10 @@ metadata:
     argocd.argoproj.io/sync-wave: "8"
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vmagent
+      app.kubernetes.io/instance: vmagent
   strategy:
     type: Recreate
   template:
