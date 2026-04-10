@@ -13,9 +13,9 @@ spec:
         revision: main
         directories:
           - path: "*/*"
-          - path: "ci-cd/argocd"
+          - path: "networking/ingress"
             exclude: true
-          - path: "observability/langfuse" 
+          - path: "observability/langfuse"
             exclude: true
   template:
     metadata:

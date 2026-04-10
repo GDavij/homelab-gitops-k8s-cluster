@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: homelab
+  namespace: argocd
+spec:
+  description: "Homelab GitOps - All infrastructure not managed by Ansible"
+  sourceRepos:
+    - "https://github.com/GDavij/homelab-gitops-k8s-cluster.git"
+    - "https://charts.external-secrets.io"
+    - "https://langfuse.github.io/langfuse-k8s"
+  destinations:
+    - namespace: "*"
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  orphanedResources:
+    warn: false
