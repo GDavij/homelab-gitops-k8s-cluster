@@ -1,0 +1,27 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: coder-workspaces
+  namespace: ci-cd
+  labels:
+    app.kubernetes.io/name: coder
+    app.kubernetes.io/instance: coder
+    app.kubernetes.io/part-of: ci-cd
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: HostRegexp(`{subdomain:[a-z0-9-]+}.coder.lab`)
+      kind: Rule
+      services:
+        - name: coder
+          port: 3000
+  tls:
+    secretName: monster-server-cert
+    options:
+      name: mtls-strict
+      namespace: traefik

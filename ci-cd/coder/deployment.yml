@@ -46,7 +46,7 @@ spec:
             - name: CODER_HTTP_ADDRESS
               value: "0.0.0.0:3000"
             - name: CODER_ACCESS_URL
-              value: "https://coder.ci-cd.svc.k8s.monster.lab"
+              value: "https://coder.lab"
             - name: CODER_MAX_TOKEN_LIFETIME
               value: "24h"
             - name: CODER_AUTOBUILD_POLL_INTERVAL
