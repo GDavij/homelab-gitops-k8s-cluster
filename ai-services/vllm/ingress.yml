@@ -1,0 +1,27 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: vllm
+  namespace: ai-services
+  labels:
+    app.kubernetes.io/name: vllm
+    app.kubernetes.io/instance: vllm
+    app.kubernetes.io/part-of: ai-services
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`inference.lab`)
+      kind: Rule
+      services:
+        - name: vllm-inference
+          port: 8000
+  tls:
+    secretName: monster-server-cert
+    options:
+      name: mtls-strict
+      namespace: traefik
