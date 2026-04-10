@@ -17,5 +17,5 @@ spec:
   tls:
     secretName: monster-server-cert
     options:
-      name: no-client-cert
-      namespace: database
+      name: mtls-strict
+      namespace: traefik

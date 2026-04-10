@@ -1,18 +1,5 @@
 ---
 apiVersion: traefik.io/v1alpha1
-kind: TLSOption
-metadata:
-  name: no-client-cert
-  namespace: database
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-spec:
-  minVersion: VersionTLS12
-  clientAuth:
-    clientAuthType: NoClientCert
-
----
-apiVersion: traefik.io/v1alpha1
 kind: IngressRouteTCP
 metadata:
   name: postgres
@@ -30,5 +17,5 @@ spec:
   tls:
     secretName: monster-server-cert
     options:
-      name: no-client-cert
-      namespace: database
+      name: mtls-strict
+      namespace: traefik
