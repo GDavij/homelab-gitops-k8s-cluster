@@ -15,7 +15,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: HostSNI(`redis-stack.lab`)
+    - match: HostSNI(`notjustcache.lab`)
       services:
         - name: redis-stack
           port: 6379
