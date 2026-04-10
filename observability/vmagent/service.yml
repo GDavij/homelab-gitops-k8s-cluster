@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmagent
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: vmagent
+    app.kubernetes.io/instance: vmagent
+    app.kubernetes.io/part-of: observability
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    app.kubernetes.io/name: vmagent
+    app.kubernetes.io/instance: vmagent
+  ports:
+    - name: http
+      port: 8429
+      targetPort: 8429
+      protocol: TCP
