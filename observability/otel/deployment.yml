@@ -29,9 +29,8 @@ spec:
         - name: otel-collector
           image: otel/opentelemetry-collector-contrib:0.114.0
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 10001
-            readOnlyRootFilesystem: true
+            runAsNonRoot: false
+            runAsUser: 0
           args: ["--config=/etc/otel/config.yaml"]
           env:
             - name: LANGFUSE_AUTH_BASE64
@@ -45,6 +44,9 @@ spec:
               protocol: TCP
             - name: otlp-http
               containerPort: 4318
+              protocol: TCP
+            - name: prometheus
+              containerPort: 8888
               protocol: TCP
             - name: health
               containerPort: 13133
@@ -64,13 +66,21 @@ spec:
               mountPath: /certs/ca.crt
               subPath: ca.crt
               readOnly: true
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            - name: journal
+              mountPath: /var/log/journal
+              readOnly: true
+            - name: journal-state
+              mountPath: /var/lib/otelcol/journal
           resources:
             requests:
-              cpu: 25m
-              memory: 64Mi
+              cpu: 200m
+              memory: 512Mi
             limits:
-              cpu: 250m
-              memory: 256Mi
+              cpu: "1"
+              memory: 1Gi
           readinessProbe:
             httpGet:
               path: /
@@ -93,3 +103,13 @@ spec:
         - name: ca-cert
           secret:
             secretName: monster-ca-trust
+        - name: varlog
+          hostPath:
+            path: /var/log
+            type: DirectoryOrCreate
+        - name: journal
+          hostPath:
+            path: /var/log/journal
+            type: DirectoryOrCreate
+        - name: journal-state
+          emptyDir: {}

@@ -21,14 +21,98 @@ data:
           http:
             endpoint: 0.0.0.0:4318
 
+      prometheus:
+        config:
+          scrape_configs: []
+        send_timestamps: true
+        metric_uncertainty: true
+
+      filelog/containers:
+        include:
+          - /var/log/pods/*/*/*.log
+        start_at: beginning
+        include_file_path: true
+        include_file_name: false
+        operators:
+          - type: container
+            id: pod-parser
+          - type: k8s_metadata
+            id: k8s-meta
+            pod_name:
+              from: attributes["k8s.pod.name"]
+            namespace:
+              from: attributes["k8s.namespace.name"]
+          - type: recombine
+            id: log-combiner
+            combine_field: attributes["log.iostream"]
+            combine_with: ""
+            max_log_size: 1048576
+            source_identifier: attributes["log.file.path"]
+            is_first_entry: attributes["log.flag"] == 1
+
+      journald/node:
+        journal_path: /var/log/journal
+        save_offset: true
+        directory: /var/lib/otelcol/journal
+        predicates:
+          - "_TRANSPORT!=syslog"
+        mapping:
+          logSeverity:
+            value: "regex:^P(\\d)$"
+            mapping:
+              emergency: 0
+              alert: 1
+              critical: 2
+              error: 3
+              warning: 4
+              notice: 5
+              info: 6
+              debug: 7
+          log:
+            value: "regex:^(?P<msg>.*)$"
+          transport:
+            value: "regex:^_TRANSPORT=(?P<val>.*)$"
+            mapping:
+              stdout: stdout
+              stderr: stderr
+              syslog: ""
+
     processors:
       batch:
         timeout: 5s
         send_batch_size: 256
       memory_limiter:
         check_interval: 5s
-        limit_mib: 192
-        spike_limit_mib: 64
+        limit_mib: 768
+        spike_limit_mib: 256
+
+      filter/keep_genai:
+        error_mode: ignore
+        trace_conditions:
+          - 'span.attributes["gen_ai.provider.name"] != nil'
+        metric_conditions:
+          - 'HasAttrKeyOnDatapoint("gen_ai.provider.name")'
+
+      filter/drop_genai:
+        error_mode: ignore
+        trace_conditions:
+          - 'span.attributes["gen_ai.provider.name"] == nil'
+        metric_conditions:
+          - '!HasAttrKeyOnDatapoint("gen_ai.provider.name")'
+
+      resource/k8s_attrs:
+        attributes:
+          - key: k8s.cluster.name
+            value: homelab
+            action: upsert
+
+      transform/logs_resource:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - set(attributes["log.source"], "k8s-container") where attributes["log.file.path"] != nil
+              - set(attributes["log.source"], "journald") where attributes["log.source"] == nil
 
     exporters:
       prometheusremotewrite:
@@ -46,12 +130,19 @@ data:
           ca_file: /certs/ca.crt
 
       otlphttp/langfuse:
-        endpoint: "http://langfuse-web.observability.svc.k8s.monster.lab:3000/api/public/otel"
+        endpoint: "http://langfuse-web.observability.svc:3000/api/public/otel"
         headers:
           Authorization: "Basic ${env:LANGFUSE_AUTH_BASE64}"
 
+      otlphttp/victorialogs:
+        logs_endpoint: "https://logs.lab:443/insert/opentelemetry/v1/logs"
+        tls:
+          cert_file: /certs/tls.crt
+          key_file: /certs/tls.key
+          ca_file: /certs/ca.crt
+
       debug:
-        verbosity: detailed
+        verbosity: normal
 
     extensions:
       health_check:
@@ -60,15 +151,44 @@ data:
     service:
       extensions: [health_check]
       pipelines:
-        traces:
-          receivers: [otlp]
+        # Cluster metrics from vmagent (prometheus receiver)
+        metrics/cluster:
+          receivers: [prometheus]
           processors: [memory_limiter, batch]
-          exporters: [otlphttp/jaeger, otlphttp/langfuse, debug]
-        metrics:
+          exporters: [prometheusremotewrite]
+
+        # Non-GenAI application metrics → VictoriaMetrics only
+        metrics/application:
           receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [prometheusremotewrite, debug]
-        logs:
+          processors: [memory_limiter, filter/drop_genai, resource/k8s_attrs, batch]
+          exporters: [prometheusremotewrite]
+
+        # GenAI metrics → VictoriaMetrics + Langfuse
+        metrics/genai:
           receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [debug]
+          processors: [memory_limiter, filter/keep_genai, resource/k8s_attrs, batch]
+          exporters: [prometheusremotewrite, otlphttp/langfuse]
+
+        # Non-GenAI traces → Jaeger only
+        traces/application:
+          receivers: [otlp]
+          processors: [memory_limiter, filter/drop_genai, resource/k8s_attrs, batch]
+          exporters: [otlphttp/jaeger]
+
+        # GenAI traces → Jaeger + Langfuse
+        traces/genai:
+          receivers: [otlp]
+          processors: [memory_limiter, filter/keep_genai, resource/k8s_attrs, batch]
+          exporters: [otlphttp/jaeger, otlphttp/langfuse]
+
+        # Container logs → VictoriaLogs
+        logs/containers:
+          receivers: [filelog/containers]
+          processors: [memory_limiter, transform/logs_resource, batch]
+          exporters: [otlphttp/victorialogs]
+
+        # Node journald logs → VictoriaLogs
+        logs/journald:
+          receivers: [journald/node]
+          processors: [memory_limiter, transform/logs_resource, batch]
+          exporters: [otlphttp/victorialogs]
