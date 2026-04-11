@@ -185,6 +185,11 @@ spec:
               vault_ensure_key secret/ci-cd/coder CODER_PG_CONNECTION_URL \
                 "postgres://coder:${CODER_PW}@postgres.database:5432/coder?sslmode=disable"
 
+              # ── AI Services ──────────────────────────────────────────────────
+              # Placeholder — replace with real token via:
+              #   vault kv patch secret/ai-services/vllm HF_TOKEN=hf_xxxxx
+              vault_ensure_key secret/ai-services/vllm HF_TOKEN "CHANGE_ME"
+
               echo "KV secrets seeded."
 
               # ─── PHASE 3: ESO token ────────────────────────────────────────
