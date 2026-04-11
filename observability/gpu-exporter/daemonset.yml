@@ -32,9 +32,6 @@ spec:
       containers:
         - name: dcgm-exporter
           image: nvidia/dcgm-exporter:4.5.2-4.8.1-ubuntu22.04
-          args:
-            - "-f"
-            - "/etc/dcgm-exporter/dcp-metrics-included.csv"
           ports:
             - name: metrics
               containerPort: 9400
