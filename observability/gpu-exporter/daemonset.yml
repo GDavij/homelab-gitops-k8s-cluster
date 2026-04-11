@@ -31,7 +31,7 @@ spec:
           operator: Exists
       containers:
         - name: dcgm-exporter
-          image: nvidia/dcgm-exporter:3.3.9-3.6.0-ubuntu22.04
+          image: nvidia/dcgm-exporter:4.5.2-4.8.1-ubuntu22.04
           args:
             - "-f"
             - "/etc/dcgm-exporter/dcp-metrics-included.csv"
