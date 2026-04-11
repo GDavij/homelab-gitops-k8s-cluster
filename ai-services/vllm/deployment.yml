@@ -65,7 +65,7 @@ spec:
               protocol: TCP
           env:
             - name: VLLM_MODEL
-              value: "google/gemma-4-2b-it"
+              value: "google/gemma-4-E2B-it"
             - name: VLLM_WORKER_MULTIPROC_METHOD
               value: "spawn"
             - name: VLLM_NO_USAGE_STATS
