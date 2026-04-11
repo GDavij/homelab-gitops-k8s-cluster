@@ -121,9 +121,9 @@ spec:
             httpGet:
               path: /health
               port: 8000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 15
-            failureThreshold: 40
+            failureThreshold: 30
       volumes:
         - name: model-cache
           persistentVolumeClaim:
