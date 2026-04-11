@@ -57,8 +57,7 @@ spec:
                 --max-num-seqs 4 \
                 --enforce-eager \
                 --enable-chunked-prefill \
-                --dtype bfloat16 \
-                --disable-log-requests
+                --dtype bfloat16
           ports:
             - name: http
               containerPort: 8000
