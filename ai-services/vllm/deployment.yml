@@ -44,7 +44,7 @@ spec:
         nvidia.com/gpu.present: "true"
       containers:
         - name: vllm
-          image: vllm/vllm-openai:v0.7.3
+          image: vllm/vllm-openai:gemma4
           command: ["/bin/sh", "-c"]
           args:
             - |
