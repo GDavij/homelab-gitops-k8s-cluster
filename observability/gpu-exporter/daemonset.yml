@@ -26,6 +26,7 @@ spec:
     spec:
       nodeSelector:
         nvidia.com/gpu.present: "true"
+      runtimeClassName: nvidia
       tolerations:
         - effect: NoSchedule
           operator: Exists
