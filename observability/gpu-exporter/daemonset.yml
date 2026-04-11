@@ -49,9 +49,11 @@ spec:
             requests:
               cpu: 50m
               memory: 128Mi
+              nvidia.com/gpu: 1
             limits:
               cpu: 200m
               memory: 512Mi
+              nvidia.com/gpu: 1
           volumeMounts:
             - name: dcgm-config
               mountPath: /etc/dcgm-exporter
