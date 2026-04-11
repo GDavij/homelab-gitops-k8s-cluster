@@ -52,8 +52,8 @@ spec:
                 --host 0.0.0.0 \
                 --port 8000 \
                 --trust-remote-code \
-                --gpu-memory-utilization 0.85 \
-                --max-model-len 4096 \
+                --gpu-memory-utilization 0.92 \
+                --max-model-len 2048 \
                 --max-num-seqs 4 \
                 --enforce-eager \
                 --enable-chunked-prefill \
