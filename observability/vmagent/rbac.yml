@@ -24,9 +24,9 @@ metadata:
     app.kubernetes.io/managed-by: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "2"
-rules:
+  rules:
   - apiGroups: [""]
-    resources: ["nodes", "nodes/proxy", "nodes/metrics"]
+    resources: ["nodes", "nodes/proxy", "nodes/metrics", "services", "endpoints", "pods", "namespaces"]
     verbs: ["get", "list", "watch"]
   - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
     verbs: ["get"]
