@@ -15,7 +15,6 @@ data:
   dcp-metrics-included.csv: |
     DCGM_FI_DEV_GPU_UTIL, gauge, GPU utilization (in %).
     DCGM_FI_DEV_MEM_COPY_UTIL, gauge, Memory utilization (in %).
-    DCGM_FI_DEV_MEM_UTIL, gauge, Memory utilization (in %).
     DCGM_FI_DEV_FB_USED, gauge, Framebuffer memory used (in MiB).
     DCGM_FI_DEV_FB_FREE, gauge, Framebuffer memory free (in MiB).
     DCGM_FI_DEV_GPU_TEMP, gauge, GPU temperature (in C).
