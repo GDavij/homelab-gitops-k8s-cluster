@@ -74,6 +74,11 @@ spec:
               value: "1"
             # HF_HUB_OFFLINE and TRANSFORMERS_OFFLINE removed — model needs
             # to be downloaded on first run since PVC is empty after reset
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vllm-secrets
+                  key: HF_TOKEN
             - name: CUDA_VISIBLE_DEVICES
               value: "0"
           volumeMounts:
