@@ -24,8 +24,6 @@ data:
       prometheus:
         config:
           scrape_configs: []
-        send_timestamps: true
-        metric_uncertainty: true
 
       filelog/containers:
         include:
