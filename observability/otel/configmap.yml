@@ -23,7 +23,9 @@ data:
 
       prometheus:
         config:
-          scrape_configs: []
+          scrape_configs:
+            - job_name: 'otel'
+              static_configs: []
 
       filelog/containers:
         include:
