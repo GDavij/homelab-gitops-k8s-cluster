@@ -1,7 +1,7 @@
 ---
 # vault-transit Deployment — Transit seal backend for the main Vault.
 # Contains a main vault process + auto-unseal sidecar.
-# Uses emptyDir (no PVC needed — state is reconstructed from vault-transit-unseal-key Secret).
+# Uses PVC (local-path-ssd) to survive pod restarts — transit vault keeps initialization state.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -115,7 +115,8 @@ spec:
 
       volumes:
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: vault-transit-data
         - name: config
           configMap:
             name: vault-transit-config
