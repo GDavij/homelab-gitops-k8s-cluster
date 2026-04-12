@@ -5,7 +5,7 @@ langfuse:
         name: langfuse-secrets
         key: SALT
     nextauth:
-      url: "https://langfuse.svc.k8s.monster.lab"
+      url: "https://langfuse.lab"
       secret:
         secretKeyRef:
           name: langfuse-secrets
