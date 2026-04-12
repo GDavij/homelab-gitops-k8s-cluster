@@ -35,7 +35,12 @@ spec:
           image: victoriametrics/vmagent:v1.107.0
           args:
             - -promscrape.config=/etc/vmagent/vmagent.yaml
-            - -remoteWrite.url=http://otel-collector.observability.svc:8888/v1/write
+            - -remoteWrite.url=https://metrics.lab:443/api/v1/write
+            - -remoteWrite.tlsCertFile=/certs/tls.crt
+            - -remoteWrite.tlsKeyFile=/certs/tls.key
+            - -remoteWrite.tlsCAFile=/certs/ca.crt
+            - -remoteWrite.tlsInsecureSkipVerify=false
+            - -remoteWrite.tlsServerName=metrics.lab
             - -loggerLevel=WARN
           ports:
             - name: http
@@ -44,6 +49,18 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/vmagent
+            - name: tls-cert
+              mountPath: /certs/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: tls-cert
+              mountPath: /certs/tls.key
+              subPath: tls.key
+              readOnly: true
+            - name: ca-cert
+              mountPath: /certs/ca.crt
+              subPath: ca.crt
+              readOnly: true
           resources:
             requests:
               cpu: 50m
@@ -67,3 +84,11 @@ spec:
         - name: config
           configMap:
             name: vmagent-config
+        - name: tls-cert
+          secret:
+            secretName: monster-server-cert
+            defaultMode: 0644
+        - name: ca-cert
+          secret:
+            secretName: monster-ca-trust
+            defaultMode: 0644
