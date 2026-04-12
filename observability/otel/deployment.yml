@@ -69,5 +69,20 @@ spec:
             - name: varlog
               mountPath: /var/log
               readOnly: true
-            - name: journal-state
-              emptyDir: {}
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+            defaultMode: 0644
+        - name: tls-cert
+          secret:
+            secretName: monster-server-cert
+            defaultMode: 0644
+        - name: ca-cert
+          secret:
+            secretName: monster-ca-trust
+            defaultMode: 0644
+        - name: varlog
+          hostPath:
+            path: /var/log
+            type: DirectoryOrCreate
