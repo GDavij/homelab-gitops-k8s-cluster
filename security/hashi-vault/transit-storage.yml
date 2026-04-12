@@ -1,0 +1,22 @@
+---
+# Transit Vault PVC — SSD tier for fast crypto operations.
+# Survives pod restarts so transit vault keeps its initialization state.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vault-transit-data
+  namespace: security
+  labels:
+    app.kubernetes.io/name: vault-transit
+    app.kubernetes.io/instance: vault-transit
+    app.kubernetes.io/part-of: security
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path-ssd
+  resources:
+    requests:
+      storage: 1Gi
