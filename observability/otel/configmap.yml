@@ -45,33 +45,6 @@ data:
             source_identifier: attributes["log.file.path"]
             is_first_entry: attributes["log.flag"] == 1
 
-      journald/node:
-        journal_path: /var/log/journal
-        save_offset: true
-        directory: /var/lib/otelcol/journal
-        predicates:
-          - "_TRANSPORT!=syslog"
-        mapping:
-          logSeverity:
-            value: "regex:^P(\\d)$"
-            mapping:
-              emergency: 0
-              alert: 1
-              critical: 2
-              error: 3
-              warning: 4
-              notice: 5
-              info: 6
-              debug: 7
-          log:
-            value: "regex:^(?P<msg>.*)$"
-          transport:
-            value: "regex:^_TRANSPORT=(?P<val>.*)$"
-            mapping:
-              stdout: stdout
-              stderr: stderr
-              syslog: ""
-
     processors:
       batch:
         timeout: 5s
@@ -187,7 +160,8 @@ data:
           exporters: [otlphttp/victorialogs]
 
         # Node journald logs → VictoriaLogs
-        logs/journald:
-          receivers: [journald/node]
-          processors: [memory_limiter, transform/logs_resource, batch]
-          exporters: [otlphttp/victorialogs]
+        # TODO: re-enable when journald receiver config is updated for OTel 0.114+
+        # logs/journald:
+        #   receivers: [journald/node]
+        #   processors: [memory_limiter, transform/logs_resource, batch]
+        #   exporters: [otlphttp/victorialogs]
