@@ -36,12 +36,7 @@ data:
         operators:
           - type: container
             id: pod-parser
-          - type: k8s_metadata
-            id: k8s-meta
-            pod_name:
-              from: attributes["k8s.pod.name"]
-            namespace:
-              from: attributes["k8s.namespace.name"]
+            add_metadata_from_filepath: true
           - type: recombine
             id: log-combiner
             combine_field: attributes["log.iostream"]
@@ -88,17 +83,21 @@ data:
 
       filter/keep_genai:
         error_mode: ignore
-        trace_conditions:
-          - 'span.attributes["gen_ai.provider.name"] != nil'
-        metric_conditions:
-          - 'HasAttrKeyOnDatapoint("gen_ai.provider.name")'
+        traces:
+          span:
+            - 'attributes["gen_ai.provider.name"] != nil'
+        metrics:
+          datapoint:
+            - 'attributes["gen_ai.provider.name"] != nil'
 
       filter/drop_genai:
         error_mode: ignore
-        trace_conditions:
-          - 'span.attributes["gen_ai.provider.name"] == nil'
-        metric_conditions:
-          - '!HasAttrKeyOnDatapoint("gen_ai.provider.name")'
+        traces:
+          span:
+            - 'attributes["gen_ai.provider.name"] == nil'
+        metrics:
+          datapoint:
+            - 'attributes["gen_ai.provider.name"] == nil'
 
       resource/k8s_attrs:
         attributes:
