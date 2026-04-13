@@ -101,10 +101,17 @@ data:
           key_file: /certs/tls.key
           ca_file: /certs/ca.crt
 
-      otlphttp/langfuse:
-        endpoint: "http://langfuse-web.observability.svc:3000/api/public/otel"
+      otlphttp/langfuse_traces:
+        traces_endpoint: "http://langfuse-web.observability.svc:3000/api/public/otel/v1/traces"
         headers:
           Authorization: "Basic ${env:LANGFUSE_AUTH_BASE64}"
+          x-langfuse-ingestion-version: "4"
+
+      otlphttp/langfuse_metrics:
+        metrics_endpoint: "http://langfuse-web.observability.svc:3000/api/public/otel/v1/metrics"
+        headers:
+          Authorization: "Basic ${env:LANGFUSE_AUTH_BASE64}"
+          x-langfuse-ingestion-version: "4"
 
       otlphttp/victorialogs:
         logs_endpoint: "https://logs.lab:443/insert/opentelemetry/v1/logs"
@@ -139,7 +146,7 @@ data:
         metrics/genai:
           receivers: [otlp]
           processors: [memory_limiter, filter/keep_genai, resource/k8s_attrs, batch]
-          exporters: [prometheusremotewrite, otlphttp/langfuse]
+          exporters: [prometheusremotewrite, otlphttp/langfuse_metrics]
 
         # Non-GenAI traces → Jaeger only
         traces/application:
@@ -151,7 +158,7 @@ data:
         traces/genai:
           receivers: [otlp]
           processors: [memory_limiter, filter/keep_genai, resource/k8s_attrs, batch]
-          exporters: [otlphttp/jaeger, otlphttp/langfuse]
+          exporters: [otlphttp/jaeger, otlphttp/langfuse_traces]
 
         # Container logs → VictoriaLogs
         logs/containers:
