@@ -58,19 +58,19 @@ data:
         error_mode: ignore
         traces:
           span:
-            - 'attributes["gen_ai.provider.name"] != nil'
+            - 'attributes["gen_ai.system"] != nil OR attributes["gen_ai.provider.name"] != nil'
         metrics:
           datapoint:
-            - 'attributes["gen_ai.provider.name"] != nil'
+            - 'attributes["gen_ai.system"] != nil OR attributes["gen_ai.provider.name"] != nil'
 
       filter/drop_genai:
         error_mode: ignore
         traces:
           span:
-            - 'attributes["gen_ai.provider.name"] == nil'
+            - 'attributes["gen_ai.system"] == nil AND attributes["gen_ai.provider.name"] == nil'
         metrics:
           datapoint:
-            - 'attributes["gen_ai.provider.name"] == nil'
+            - 'attributes["gen_ai.system"] == nil AND attributes["gen_ai.provider.name"] == nil'
 
       resource/k8s_attrs:
         attributes:
