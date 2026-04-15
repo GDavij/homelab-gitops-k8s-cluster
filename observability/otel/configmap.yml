@@ -48,29 +48,27 @@ data:
     processors:
       batch:
         timeout: 5s
-        send_batch_size: 256
+        send_batch_size: 1024
       memory_limiter:
         check_interval: 5s
         limit_mib: 768
         spike_limit_mib: 256
 
+      # Metrics-only filter: multiple list items = OR in OTTL
+      # Drops spans/metrics matching ANY condition
       filter/keep_genai:
         error_mode: ignore
-        traces:
-          span:
-            - 'attributes["gen_ai.system"] != nil OR attributes["gen_ai.provider.name"] != nil'
         metrics:
           datapoint:
-            - 'attributes["gen_ai.system"] != nil OR attributes["gen_ai.provider.name"] != nil'
+            - 'attributes["gen_ai.system"] != nil'
+            - 'attributes["gen_ai.provider.name"] != nil'
 
       filter/drop_genai:
         error_mode: ignore
-        traces:
-          span:
-            - 'attributes["gen_ai.system"] == nil AND attributes["gen_ai.provider.name"] == nil'
         metrics:
           datapoint:
-            - 'attributes["gen_ai.system"] == nil AND attributes["gen_ai.provider.name"] == nil'
+            - 'attributes["gen_ai.system"] != nil'
+            - 'attributes["gen_ai.provider.name"] != nil'
 
       resource/k8s_attrs:
         attributes:
@@ -106,6 +104,11 @@ data:
         headers:
           Authorization: "Basic ${env:LANGFUSE_AUTH_BASE64}"
           x-langfuse-ingestion-version: "4"
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+          max_elapsed_time: 300s
 
       otlphttp/langfuse_metrics:
         metrics_endpoint: "http://langfuse-web.observability.svc:3000/api/public/otel/v1/metrics"
@@ -148,16 +151,10 @@ data:
           processors: [memory_limiter, filter/keep_genai, resource/k8s_attrs, batch]
           exporters: [prometheusremotewrite, otlphttp/langfuse_metrics]
 
-        # Non-GenAI traces → Jaeger only
-        traces/application:
+        # ALL traces → Jaeger + Langfuse (no filter, no split)
+        traces:
           receivers: [otlp]
-          processors: [memory_limiter, filter/drop_genai, resource/k8s_attrs, batch]
-          exporters: [otlphttp/jaeger]
-
-        # GenAI traces → Jaeger + Langfuse
-        traces/genai:
-          receivers: [otlp]
-          processors: [memory_limiter, filter/keep_genai, resource/k8s_attrs, batch]
+          processors: [memory_limiter, resource/k8s_attrs, batch]
           exporters: [otlphttp/jaeger, otlphttp/langfuse_traces]
 
         # Container logs → VictoriaLogs
