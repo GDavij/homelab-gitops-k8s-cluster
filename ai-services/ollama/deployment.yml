@@ -30,7 +30,7 @@ spec:
       runtimeClassName: nvidia
       containers:
         - name: ollama
-          image: ollama/ollama:latest
+          image: ollama/ollama:0.21.0
           ports:
             - name: http
               containerPort: 11434
